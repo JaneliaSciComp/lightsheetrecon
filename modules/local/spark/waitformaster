@@ -1,0 +1,63 @@
+task.ext.spark_container = "multifish/biocontainers-spark:3.1.3"
+
+process SPARK_WAITFORMASTER {
+    label 'process_single'
+    container "${task.ext.spark_container}"
+    errorStrategy { task.exitStatus == 2
+        ? 'retry' // retry on a timeout to prevent the case when the waiter is started before the master and master never gets its chance
+        : 'terminate' }
+    maxRetries 20
+
+    input:
+    val(spark_work_dir)
+    val(terminate_name)
+
+    output:
+    tuple val(spark_work_dir), val(terminate_name), env(spark_uri)
+
+    when:
+    task.ext.when == null || task.ext.when
+
+    script:
+    def args = task.ext.args ?: ''
+    def spark_master_log_name = get_spark_master_log(spark_work_dir)
+    def terminate_file_name = get_terminate_file_name(spark_work_dir, terminate_name)
+    def check_session_id = create_check_session_id_script(spark_work_dir)
+    """
+    SPARK_VERSION=`ls /opt/spark/jars/spark-core* | sed -e "s/.\(.*\)-\(.*\)\.jar/\2/"`
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        spark: ${task.ext.spark_version}
+    END_VERSIONS
+
+    ${check_session_id}
+
+    while true; do
+
+        if [[ -e ${spark_master_log_name} ]]; then
+            test_uri=`grep -o "\\(spark://.*\$\\)" ${spark_master_log_name} || true`
+            if [[ ! -z \${test_uri} ]]; then
+                echo "Spark master started at \${test_uri}"
+                break
+            fi
+        fi
+
+        if [[ -e "${terminate_file_name}" ]]; then
+            echo "Terminate file ${terminate_file_name} found"
+            exit 1
+        fi
+
+        if (( \${SECONDS} > \${MAX_WAIT_SECS} )); then
+            echo "Timed out after \${SECONDS} seconds while waiting for spark master <- ${spark_master_log_name}"
+            cat ${spark_master_log_name} >&2
+            exit 2
+        fi
+
+        sleep \${SLEEP_SECS}
+        SECONDS=\$(( \${SECONDS} + \${SLEEP_SECS} ))
+
+
+    done
+    spark_uri=\${test_uri}
+    """
+}
