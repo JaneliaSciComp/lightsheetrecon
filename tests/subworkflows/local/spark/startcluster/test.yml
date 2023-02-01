@@ -1,0 +1,5 @@
+- name: spark start cluster
+  command: nextflow run ./tests/subworkflows/local/spark/startcluster -entry test_spark_startcluster -c ./tests/config/nextflow.config
+  tags:
+    - "subworkflows"
+    - "subworkflows/spark/startcluster"

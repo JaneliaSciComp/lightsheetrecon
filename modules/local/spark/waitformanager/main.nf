@@ -1,8 +1,12 @@
-task.ext.spark_container = "multifish/biocontainers-spark:3.1.3"
+include {
+    get_spark_master_log;
+    get_terminate_file_name;
+    create_check_session_id_script;
+} from '../utils'
 
-process SPARK_WAITFORMASTER {
+process SPARK_WAITFORMANAGER {
     label 'process_single'
-    container "${task.ext.spark_container}"
+    container 'multifish/biocontainers-spark:3.1.3'
     errorStrategy { task.exitStatus == 2
         ? 'retry' // retry on a timeout to prevent the case when the waiter is started before the master and master never gets its chance
         : 'terminate' }
@@ -10,10 +14,9 @@ process SPARK_WAITFORMASTER {
 
     input:
     val(spark_work_dir)
-    val(terminate_name)
 
     output:
-    tuple val(spark_work_dir), val(terminate_name), env(spark_uri)
+    tuple val(spark_work_dir), env(spark_uri)
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,16 +24,10 @@ process SPARK_WAITFORMASTER {
     script:
     def args = task.ext.args ?: ''
     def spark_master_log_name = get_spark_master_log(spark_work_dir)
-    def terminate_file_name = get_terminate_file_name(spark_work_dir, terminate_name)
-    def check_session_id = create_check_session_id_script(spark_work_dir)
+    def terminate_file_name = get_terminate_file_name(spark_work_dir)
+    def check_session_id_script = create_check_session_id_script(spark_work_dir)
     """
-    SPARK_VERSION=`ls /opt/spark/jars/spark-core* | sed -e "s/.\(.*\)-\(.*\)\.jar/\2/"`
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        spark: ${task.ext.spark_version}
-    END_VERSIONS
-
-    ${check_session_id}
+    ${check_session_id_script}
 
     while true; do
 
