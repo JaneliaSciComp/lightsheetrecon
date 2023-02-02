@@ -1,6 +1,6 @@
 include {
-    get_terminate_file_name;
     get_spark_worker_log;
+    get_terminate_file_name;
     create_check_session_id_script;
 } from '../utils'
 
@@ -21,39 +21,10 @@ process SPARK_WAITFORWORKER {
     when:
     task.ext.when == null || task.ext.when
 
-    script:
-    def args = task.ext.args ?: ''
-    def terminate_file_name = get_terminate_file_name(spark_work_dir)
-    def spark_worker_log_file = get_spark_worker_log(spark_work_dir, worker_id)
-    def check_session_id_script = create_check_session_id_script(spark_work_dir)
-    """
-    ${check_session_id_script}
-
-    while true; do
-
-        if [[ -e "${spark_worker_log_file}" ]]; then
-            found=`grep -o "\\(Worker: Successfully registered with master ${spark_uri}\\)" ${spark_worker_log_file} || true`
-
-            if [[ ! -z \${found} ]]; then
-                echo "\${found}"
-                break
-            fi
-        fi
-
-        if [[ -e "${terminate_file_name}" ]]; then
-            echo "Terminate file ${terminate_file_name} found"
-            exit 1
-        fi
-
-        if (( \${SECONDS} > \${MAX_WAIT_SECS} )); then
-            echo "Spark worker ${worker_id} timed out after \${SECONDS} seconds while waiting for master ${spark_uri}"
-            cat ${spark_worker_log_file} >&2
-            exit 2
-        fi
-
-        sleep \${SLEEP_SECS}
-        SECONDS=\$(( \${SECONDS} + \${SLEEP_SECS} ))
-
-    done
-    """
+    shell:
+    sleep_secs = task.ext.sleep_secs ?: '1'
+    max_wait_secs = task.ext.max_wait_secs ?: '3600'
+    spark_worker_log_file = get_spark_worker_log(spark_work_dir, worker_id)
+    terminate_file_name = get_terminate_file_name(spark_work_dir)
+    template 'waitforworker.sh'
 }

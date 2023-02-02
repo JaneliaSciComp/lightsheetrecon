@@ -113,39 +113,9 @@ def create_write_session_id_script(spark_work_dir) {
 
 def create_check_session_id_script(spark_work_dir) {
     """
-    SESSION_FILE="$spark_work_dir/.sessionId"
-    echo "Checking for \$SESSION_FILE"
     SLEEP_SECS=${params.sleep_between_timeout_checks_seconds}
     MAX_WAIT_SECS=${params.wait_for_spark_timeout_seconds}
     SECONDS=0
-
-    while ! test -e "\$SESSION_FILE"; do
-        sleep \${SLEEP_SECS}
-        if (( \${SECONDS} < \${MAX_WAIT_SECS} )); then
-            echo "Waiting for \$SESSION_FILE"
-            SECONDS=\$(( \${SECONDS} + \${SLEEP_SECS} ))
-        else
-            echo "-------------------------------------------------------------------------------"
-            echo "ERROR: Timed out after \${SECONDS} seconds while waiting for \$SESSION_FILE    "
-            echo "Make sure that your --spark_work_dir is accessible to all nodes in the cluster "
-            echo "-------------------------------------------------------------------------------"
-            exit 1
-        fi
-    done
-
-    echo "Found \$SESSION_FILE in \$SECONDS s"
-    # reset SECONDS for the next wait
-    SECONDS=0
-
-    if ! grep -F -x -q "${workflow.sessionId}" \$SESSION_FILE
-    then
-        echo "------------------------------------------------------------------------------"
-        echo "ERROR: session id in \$SESSION_FILE does not match current session            "
-        echo "Make sure that your --spark_work_dir is accessible to all nodes in the cluster"
-        echo "and that you are not running multiple pipelines with the same --spark_work_dir"
-        echo "------------------------------------------------------------------------------"
-        exit 1
-    fi
     """
 }
 

@@ -21,40 +21,10 @@ process SPARK_WAITFORMANAGER {
     when:
     task.ext.when == null || task.ext.when
 
-    script:
-    def args = task.ext.args ?: ''
-    def spark_master_log_name = get_spark_master_log(spark_work_dir)
-    def terminate_file_name = get_terminate_file_name(spark_work_dir)
-    def check_session_id_script = create_check_session_id_script(spark_work_dir)
-    """
-    ${check_session_id_script}
-
-    while true; do
-
-        if [[ -e ${spark_master_log_name} ]]; then
-            test_uri=`grep -o "\\(spark://.*\$\\)" ${spark_master_log_name} || true`
-            if [[ ! -z \${test_uri} ]]; then
-                echo "Spark master started at \${test_uri}"
-                break
-            fi
-        fi
-
-        if [[ -e "${terminate_file_name}" ]]; then
-            echo "Terminate file ${terminate_file_name} found"
-            exit 1
-        fi
-
-        if (( \${SECONDS} > \${MAX_WAIT_SECS} )); then
-            echo "Timed out after \${SECONDS} seconds while waiting for spark master <- ${spark_master_log_name}"
-            cat ${spark_master_log_name} >&2
-            exit 2
-        fi
-
-        sleep \${SLEEP_SECS}
-        SECONDS=\$(( \${SECONDS} + \${SLEEP_SECS} ))
-
-
-    done
-    spark_uri=\${test_uri}
-    """
+    shell:
+    sleep_secs = task.ext.sleep_secs ?: '1'
+    max_wait_secs = task.ext.max_wait_secs ?: '3600'
+    spark_master_log_name = get_spark_master_log(spark_work_dir)
+    terminate_file_name = get_terminate_file_name(spark_work_dir)
+    template 'waitformanager.sh'
 }
