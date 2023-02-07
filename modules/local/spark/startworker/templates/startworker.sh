@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -u
+#!/usr/bin/env bash -ue
 
 spark_work_dir="!{spark_work_dir}"
 spark_uri="!{spark_uri}"
@@ -8,6 +8,7 @@ worker_mem_in_gb="!{worker_mem_in_gb}"
 spark_worker_log_file="!{spark_worker_log_file}"
 spark_config_filepath="!{spark_config_filepath}"
 terminate_file_name="!{terminate_file_name}"
+sleep_secs=!{sleep_secs}
 
 echo "Starting spark worker ${worker_id} - logging to ${spark_worker_log_file}"
 rm -f ${spark_worker_log_file} || true
@@ -62,8 +63,13 @@ fi
     !{args} &> ${spark_worker_log_file} &
 spid=$!
 
-# Wait for terminate signal
-trap "kill -9 $spid &>/dev/null" EXIT
+# Ensure that Spark process dies if this script is interrupted
+function cleanup() {
+    echo "Killing background processes"
+    [[ $spid ]] && kill "$spid"
+    exit 0
+}
+trap cleanup INT TERM EXIT
 
 while true; do
     if ! kill -0 $spid >/dev/null 2>&1; then
@@ -75,5 +81,5 @@ while true; do
         cat ${spark_worker_log_file}
         break
     fi
-    sleep 2
+    sleep ${sleep_secs}
 done

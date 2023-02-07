@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -u
+#!/usr/bin/env bash -ue
 
 spark_uri="!{spark_uri}"
 spark_worker_log_file="!{spark_worker_log_file}"

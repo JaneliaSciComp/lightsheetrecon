@@ -19,6 +19,7 @@ process SPARK_STARTMANAGER {
 
     shell:
     args = task.ext.args ?: ''
+    sleep_secs = task.ext.sleep_secs ?: '1'
     spark_config_filepath = get_spark_config_filepath(spark_work_dir)
     spark_master_log_file = get_spark_master_log(spark_work_dir)
     terminate_file_name = get_terminate_file_name(spark_work_dir)

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -u
+#!/usr/bin/env bash -ue
 
 work_dir="!{spark_work_dir}"
 

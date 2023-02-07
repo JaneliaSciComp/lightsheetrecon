@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -u
+#!/usr/bin/env bash -ue
 
 spark_master_log_name="!{spark_master_log_name}"
 terminate_file_name="!{terminate_file_name}"
