@@ -6,26 +6,26 @@ include { SPARK_WAITFORWORKER } from '../../../../modules/local/spark/waitforwor
 
 workflow SPARK_START {
     take:
-    spark_work_dir
     spark_local_dir
+    spark_work_dir
     spark_workers
     spark_worker_cores
     spark_gbmem_per_core
 
     main:
     // prepare spark cluster params
-    SPARK_PREPARE([spark_work_dir, spark_local_dir])
+    SPARK_PREPARE([spark_local_dir, spark_work_dir])
 
     // start cluster manager and wait for it to be ready
     SPARK_STARTMANAGER(SPARK_PREPARE.out)
-    SPARK_WAITFORMANAGER(spark_work_dir) // channel: [val(spark_work_dir), val(spark_uri)]
+    SPARK_WAITFORMANAGER(SPARK_PREPARE.out) // channel: [val(spark_uri, val(spark_work_dir))]
 
     // cross product all workers with all work dirs
     // so that we can start all needed spark workers with the proper worker directory
     def workers_list = 1..spark_workers
 
     // cross product all worker directories with all worker numbers
-    // channel: [val(spark_work_dir), val(spark_uri), val(worker_id)]
+    // channel: [val(spark_uri), val(spark_work_dir), val(worker_id)]
     def workers_with_work_dirs = SPARK_WAITFORMANAGER.out.combine(workers_list)
 
     // start workers
@@ -53,5 +53,5 @@ workflow SPARK_START {
     }
 
     emit:
-    done = final_out // channel: [ spark_work_dir, spark_uri ]
+    done = final_out // channel: [ spark_uri, spark_work_dir ]
 }

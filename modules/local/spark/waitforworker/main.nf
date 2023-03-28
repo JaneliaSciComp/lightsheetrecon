@@ -13,10 +13,10 @@ process SPARK_WAITFORWORKER {
     maxRetries 20
 
     input:
-    tuple val(spark_work_dir), val(spark_uri), val(worker_id)
+    tuple val(spark_uri), val(spark_work_dir), val(worker_id)
 
     output:
-    tuple val(spark_work_dir), val(spark_uri), val(worker_id)
+    tuple val(spark_uri), val(spark_work_dir), val(worker_id)
 
     when:
     task.ext.when == null || task.ext.when

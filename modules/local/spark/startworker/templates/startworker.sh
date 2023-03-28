@@ -13,7 +13,7 @@ sleep_secs=!{sleep_secs}
 echo "Starting spark worker ${worker_id} - logging to ${spark_worker_log_file}"
 rm -f ${spark_worker_log_file} || true
 
-# Initialize the environment for Spark
+# Initialize the environment for Spark (same as startmanager.sh)
 export SPARK_ENV_LOADED=
 export SPARK_HOME=/opt/spark
 export PYSPARK_PYTHONPATH_SET=
@@ -25,7 +25,7 @@ set +u
 . "/opt/spark/bin/load-spark-env.sh"
 set -u
 
-# Determine the IP address of the current host
+# Determine the IP address of the current host (same as startmanager.sh)
 local_ip=
 if [ "!{workflow.containerEngine}" = "docker" ]; then
     for interface in /sys/class/net/{eth*,en*,em*}; do

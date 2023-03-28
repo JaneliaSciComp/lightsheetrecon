@@ -3,10 +3,10 @@ process SPARK_PREPARE {
     container 'multifish/biocontainers-spark:3.1.3'
 
     input:
-    tuple val(spark_work_dir), val(spark_local_dir)
+    tuple val(spark_local_dir), val(spark_work_dir)
 
     output:
-    tuple val(spark_work_dir), val(spark_local_dir)
+    tuple val(spark_local_dir), val(spark_work_dir)
 
     when:
     task.ext.when == null || task.ext.when

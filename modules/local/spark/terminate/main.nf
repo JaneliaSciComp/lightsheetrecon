@@ -8,10 +8,10 @@ process SPARK_TERMINATE {
     container 'multifish/biocontainers-spark:3.1.3'
 
     input:
-    val(spark_work_dir)
+    tuple val(spark_uri), val(spark_work_dir)
 
     output:
-    val(spark_work_dir)
+    tuple val(spark_uri), val(spark_work_dir)
 
     script:
     terminate_file_name = get_terminate_file_name(spark_work_dir)

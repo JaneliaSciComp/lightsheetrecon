@@ -13,10 +13,10 @@ process SPARK_WAITFORMANAGER {
     maxRetries 20
 
     input:
-    val(spark_work_dir)
+    tuple val(spark_local_dir), val(spark_work_dir)
 
     output:
-    tuple val(spark_work_dir), env(spark_uri)
+    tuple env(spark_uri), val(spark_work_dir)
 
     when:
     task.ext.when == null || task.ext.when
