@@ -75,7 +75,7 @@ def write_config(data, cf) {
 
 /**
  * index_channel converts the original channel into
- * another channel that contains a tuple of with
+ * another channel that contains a tuple of
  * the position of the element in the channel and element itself.
  * For example:
  * [e1, e2, e3, ..., en] -> [ [0, e1], [1, e2], [2, e3], ..., [n-1, en] ]

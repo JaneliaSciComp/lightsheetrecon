@@ -1,6 +1,5 @@
 include {
     get_terminate_file_name;
-    create_check_session_id_script;
 } from '../utils'
 
 process SPARK_TERMINATE {
@@ -8,17 +7,14 @@ process SPARK_TERMINATE {
     container 'multifish/biocontainers-spark:3.1.3'
 
     input:
-    tuple val(spark_uri), val(spark_work_dir)
+    tuple val(spark_uri), path(spark_work_dir)
 
     output:
-    tuple val(spark_uri), val(spark_work_dir)
+    tuple val(spark_uri), path(spark_work_dir)
 
     script:
     terminate_file_name = get_terminate_file_name(spark_work_dir)
-    check_session_id = create_check_session_id_script(spark_work_dir)
     """
-    ${check_session_id}
-
     echo "DONE" > ${terminate_file_name}
     cat ${terminate_file_name}
     """

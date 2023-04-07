@@ -14,11 +14,24 @@ workflow SPARK_START {
 
     main:
     // prepare spark cluster params
-    SPARK_PREPARE([spark_local_dir, spark_work_dir])
+    def prepare_input = spark_work_dir.map { [spark_local_dir, file(it).parent, file(it).name] }
+    SPARK_PREPARE(prepare_input)
 
     // start cluster manager and wait for it to be ready
-    SPARK_STARTMANAGER(SPARK_PREPARE.out)
-    SPARK_WAITFORMANAGER(SPARK_PREPARE.out) // channel: [val(spark_uri, val(spark_work_dir))]
+    def manager_input = SPARK_PREPARE.out.map {
+        spark_local_dir = it[0]
+        spark_work_dir = it[1].toString()+File.separator+it[2]
+        log.debug "Spark local directory: ${spark_local_dir}"
+        log.debug "Spark work directory: ${spark_work_dir}"
+        [spark_local_dir, spark_work_dir]
+    }
+
+    // start the Spark manager
+    // this runs indefinitely until SPARK_TERMINATE is called
+    SPARK_STARTMANAGER(manager_input)
+
+    // start a watcher that waits for the manager to be ready
+    SPARK_WAITFORMANAGER(manager_input) // channel: [val(spark_uri, val(spark_work_dir))]
 
     // cross product all workers with all work dirs
     // so that we can start all needed spark workers with the proper worker directory
@@ -29,6 +42,7 @@ workflow SPARK_START {
     def workers_with_work_dirs = SPARK_WAITFORMANAGER.out.combine(workers_list)
 
     // start workers
+    // these run indefinitely until SPARK_TERMINATE is called
     SPARK_STARTWORKER(
         workers_with_work_dirs,
         spark_worker_cores,

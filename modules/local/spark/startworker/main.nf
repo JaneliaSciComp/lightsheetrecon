@@ -11,12 +11,12 @@ process SPARK_STARTWORKER {
     memory "${worker_mem_in_gb+1} GB"
 
     input:
-    tuple val(spark_uri), val(spark_work_dir), val(worker_id)
+    tuple val(spark_uri), path(spark_work_dir), val(worker_id)
     val(worker_cores)
     val(worker_mem_in_gb)
 
     output:
-    tuple val(spark_uri), val(spark_work_dir), val(worker_id)
+    tuple val(spark_uri), path(spark_work_dir), val(worker_id)
 
     when:
     task.ext.when == null || task.ext.when

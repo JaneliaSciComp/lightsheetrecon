@@ -11,7 +11,7 @@ WorkflowLightsheetrecon.initialise(params, log)
 
 // TODO nf-core: Add all file path parameters for the pipeline to the list below
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config, params.fasta ]
+def checkPathParamList = [ params.input, params.outdir ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 // Check mandatory parameters
@@ -62,42 +62,34 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 // def multiqc_report = []
 
 workflow LIGHTSHEETRECON {
-
-    ch_versions = Channel.empty()
-
-    // stitching
-    def stitching_results = STITCHING(
-        params.stitching_app,
-        params.stitch_acq_names,
+    ch_acq_names = Channel.fromList(params.acq_names.tokenize(','))
+    stitching_results = STITCHING(
+        ch_acq_names,
         params.input,
         params.outdir,
-        params.stitching_output,
-        params.channels,
+        params.channels?.split(','),
         params.resolution,
         params.axis_mapping,
         params.stitching_block_size,
         params.retile_z_size,
-        params.stitching_ref, // stitching_ref or dapi_channel
+        params.acq_ref,
         params.stitching_mode,
         params.stitching_padding,
         params.stitching_blur_sigma,
         params.stitching_czi_pattern,
-        params.spark_conf,
-        params.spark_work_dir,
         params.spark_workers,
         params.spark_worker_cores,
         params.gb_per_core,
         params.driver_cores,
-        params.driver_memory,
-        params.driver_logconfig
+        params.driver_memory
     ) // [ acq, stitching_dir ]
     stitching_results.subscribe { log.debug "Stitching results: $it" }
 
-    ch_versions = ch_versions.mix(STITCHING.out.versions)
+    // ch_versions = ch_versions.mix(STITCHING.out.versions)
 
-    CUSTOM_DUMPSOFTWAREVERSIONS (
-        ch_versions.unique().collectFile(name: 'collated_versions.yml')
-    )
+    // CUSTOM_DUMPSOFTWAREVERSIONS (
+    //     ch_versions.unique().collectFile(name: 'collated_versions.yml')
+    // )
 
     //
     // MODULE: MultiQC

@@ -9,10 +9,10 @@ process SPARK_STARTMANAGER {
     container 'multifish/biocontainers-spark:3.1.3'
 
     input:
-    tuple val(spark_local_dir), val(spark_work_dir)
+    tuple path(spark_local_dir), path(spark_work_dir)
 
     output:
-    tuple val(spark_local_dir), val(spark_work_dir)
+    tuple path(spark_local_dir), path(spark_work_dir)
 
     when:
     task.ext.when == null || task.ext.when
@@ -23,5 +23,6 @@ process SPARK_STARTMANAGER {
     spark_config_filepath = get_spark_config_filepath(spark_work_dir)
     spark_master_log_file = get_spark_master_log(spark_work_dir)
     terminate_file_name = get_terminate_file_name(spark_work_dir)
+    container_engine = workflow.containerEngine
     template 'startmanager.sh'
 }

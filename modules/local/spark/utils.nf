@@ -111,14 +111,6 @@ def create_write_session_id_script(spark_work_dir) {
     """
 }
 
-def create_check_session_id_script(spark_work_dir) {
-    """
-    SLEEP_SECS=${params.sleep_between_timeout_checks_seconds}
-    MAX_WAIT_SECS=${params.wait_for_spark_timeout_seconds}
-    SECONDS=0
-    """
-}
-
 def wait_to_terminate(pid_var, terminate_file_name, log_file) {
     """
     trap "kill -9 \$${pid_var} &>/dev/null" EXIT

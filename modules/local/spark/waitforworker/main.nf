@@ -1,7 +1,6 @@
 include {
     get_spark_worker_log;
     get_terminate_file_name;
-    create_check_session_id_script;
 } from '../utils'
 
 process SPARK_WAITFORWORKER {
@@ -13,10 +12,10 @@ process SPARK_WAITFORWORKER {
     maxRetries 20
 
     input:
-    tuple val(spark_uri), val(spark_work_dir), val(worker_id)
+    tuple val(spark_uri), path(spark_work_dir), val(worker_id)
 
     output:
-    tuple val(spark_uri), val(spark_work_dir), val(worker_id)
+    tuple val(spark_uri), path(spark_work_dir), val(worker_id)
 
     when:
     task.ext.when == null || task.ext.when

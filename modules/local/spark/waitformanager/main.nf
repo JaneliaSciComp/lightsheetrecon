@@ -1,7 +1,6 @@
 include {
     get_spark_master_log;
     get_terminate_file_name;
-    create_check_session_id_script;
 } from '../utils'
 
 process SPARK_WAITFORMANAGER {
@@ -13,10 +12,10 @@ process SPARK_WAITFORMANAGER {
     maxRetries 20
 
     input:
-    tuple val(spark_local_dir), val(spark_work_dir)
+    tuple val(spark_local_dir), path(spark_work_dir)
 
     output:
-    tuple env(spark_uri), val(spark_work_dir)
+    tuple env(spark_uri), path(spark_work_dir)
 
     when:
     task.ext.when == null || task.ext.when

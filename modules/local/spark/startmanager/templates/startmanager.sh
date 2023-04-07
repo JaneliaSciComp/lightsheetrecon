@@ -6,6 +6,7 @@ spark_master_log_file="!{spark_master_log_file}"
 spark_config_filepath="!{spark_config_filepath}"
 terminate_file_name="!{terminate_file_name}"
 sleep_secs=!{sleep_secs}
+container_engine=!{container_engine}
 
 echo "Starting spark master - logging to ${spark_master_log_file}"
 rm -f ${spark_master_log_file} || true
@@ -36,7 +37,7 @@ set -u
 
 # Determine the IP address of the current host
 local_ip=
-if [ "!{workflow.containerEngine}" = "docker" ]; then
+if [ "!{container_engine}" = "docker" ]; then
     for interface in /sys/class/net/{eth*,en*,em*}; do
         [ -e $interface ] && \
         [ `cat $interface/operstate` == "up" ] && \

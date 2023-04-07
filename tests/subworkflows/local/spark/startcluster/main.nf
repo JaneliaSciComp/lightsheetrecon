@@ -11,6 +11,6 @@ workflow test_spark_startcluster {
     def spark_local_dir = "/tmp/spark-${workflow.sessionId}"
 
     // channel: [ spark_uri, spark_work_dir ]
-    SPARK_START ( spark_local_dir, spark_work_dir, 4, 1, 1 )
+    SPARK_START ( spark_local_dir, Channel.of(spark_work_dir), 4, 1, 1 )
     | SPARK_TERMINATE
 }

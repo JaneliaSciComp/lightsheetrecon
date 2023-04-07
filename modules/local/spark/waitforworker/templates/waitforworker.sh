@@ -10,7 +10,7 @@ elapsed_secs=0
 while true; do
 
     if [[ -e ${spark_worker_log_file} ]]; then
-        found=`grep -o "\(Worker: Successfully registered with master ${spark_uri}\)" ${spark_worker_log_file} || true`
+        found=`grep -o "\(Worker1: Successfully registered with master ${spark_uri}\)" ${spark_worker_log_file} || true`
         if [[ ! -z ${found} ]]; then
             echo "${found}"
             break

@@ -1,20 +1,20 @@
-include { SPARK_START } from '../../../subworkflows/local/spark/start'
-include { SPARK_STOP } from '../../../subworkflows/local/spark/stop'
-include {
-    SPARK_APP as run_parse_czi_tiles;
-    SPARK_APP as run_czi2n5;
-    SPARK_APP as run_flatfield_correction;
-    SPARK_APP as run_retile;
-    SPARK_APP as run_stitching;
-    SPARK_APP as run_fuse;
-} from '../../../subworkflows/local/spark/app'
+include { SPARK_START } from '../../../subworkflows/local/spark/start/main'
+include { SPARK_TERMINATE } from '../../../modules/local/spark/terminate/main'
+include { STITCHING_PREPARE } from '../../../modules/local/stitching/prepare/main'
 
 include {
-    SPARK_PREPARE;
+    SPARK_RUNAPP as run_parse_czi_tiles;
+    SPARK_RUNAPP as run_czi2n5;
+    SPARK_RUNAPP as run_flatfield_correction;
+    SPARK_RUNAPP as run_retile;
+    SPARK_RUNAPP as run_stitching;
+    SPARK_RUNAPP as run_fuse;
+} from '../../../modules/local/spark/runapp/main'
+
+include {
     entries_inputs_args;
     index_channel;
 } from './utils'
-
 
 /**
  * prepares the work and output directories and invoke stitching
@@ -24,11 +24,9 @@ include {
  */
 workflow STITCHING {
     take:
-    stitching_app
-    acquisitions
+    ch_acq_names
     input_dir
     output_dir
-    stitching_output
     channels
     resolution
     axis_mapping
@@ -39,21 +37,19 @@ workflow STITCHING {
     stitching_padding
     stitching_blur_sigma
     stitching_czi_pattern
-    spark_conf
-    spark_work_dir
     spark_workers
     spark_worker_cores
     spark_gbmem_per_core
     spark_driver_cores
     spark_driver_memory
-    spark_driver_logconfig
 
     main:
-    def acq_stitching_dir_pairs = prepare_stitching_data(
+    def stitching_app_container = "multifish/biocontainers-spark:3.1.3"
+    def spark_work_dir = "${workDir}/spark/${workflow.sessionId}"
+    def acq_stitching_dir_pairs = STITCHING_PREPARE(
         input_dir,
         output_dir,
-        Channel.fromList(acquisitions),
-        stitching_output
+        ch_acq_names
     )
 
     def acq_inputs = acq_stitching_dir_pairs
@@ -75,7 +71,6 @@ workflow STITCHING {
         }
 
     def stitching_results = stitch(
-        stitching_app,
         acq_inputs.acq_names,
         acq_inputs.stitching_dirs,
         channels,
@@ -88,14 +83,13 @@ workflow STITCHING {
         stitching_padding,
         stitching_blur_sigma,
         stitching_czi_pattern,
-        spark_conf,
+        stitching_app_container,
         acq_inputs.spark_work_dirs,
         spark_workers,
         spark_worker_cores,
         spark_gbmem_per_core,
         spark_driver_cores,
-        spark_driver_memory,
-        spark_driver_logconfig
+        spark_driver_memory
     )
 
     emit:
@@ -109,7 +103,6 @@ workflow STITCHING {
  */
 workflow stitch {
     take:
-    stitching_app
     acq_names
     stitching_dirs
     channels
@@ -122,21 +115,18 @@ workflow stitch {
     stitching_padding
     stitching_blur_sigma
     stitching_czi_pattern
-    spark_conf
+    stitching_app_container
     spark_work_dirs
     spark_workers
     spark_worker_cores
     spark_gbmem_per_core
     spark_driver_cores
     spark_driver_memory
-    spark_driver_logconfig
 
     main:
-    def spark_driver_stack_size = ''
-    def spark_driver_deploy_mode = ''
-    def terminate_stitching_name = 'terminate-stitching'
+    def spark_local_dir = "/tmp/spark-${workflow.sessionId}"
 
-    // index inputs so that I can pair acq name with the corresponding spark URI and/or spark working dir
+    // index inputs so that we can pair acq_name with the corresponding spark URI and/or spark working dir
     def indexed_acq_names = index_channel(acq_names)
     def indexed_stitching_dirs = index_channel(stitching_dirs)
     def indexed_spark_work_dirs = index_channel(spark_work_dirs)
@@ -146,13 +136,13 @@ workflow stitch {
     indexed_spark_work_dirs.subscribe { log.debug "Indexed spark working dir: $it" }
 
     // start a spark cluster
+    // channel: [ spark_uri, spark_work_dir ]
     def spark_cluster_res = SPARK_START(
-        spark_conf,
+        spark_local_dir,
         spark_work_dirs,
         spark_workers,
         spark_worker_cores,
-        spark_gbmem_per_core,
-        terminate_stitching_name
+        spark_gbmem_per_core
     )
     // print spark cluster result
     spark_cluster_res.subscribe {  log.debug "Spark cluster result: $it"  }
@@ -174,7 +164,7 @@ workflow stitch {
     // prepare parse czi tiles
     def parse_czi_args = prepare_app_args(
         "parseCZI",
-        indexed_spark_work_dirs, //  here I only want a tuple that has the working dir as the 2nd element
+        indexed_spark_work_dirs, // to start the chain we just need a tuple that has the working dir as the 2nd element
         indexed_spark_work_dirs,
         indexed_acq_data,
         { acq_name, stitching_dir ->
@@ -184,27 +174,20 @@ workflow stitch {
         }
     )
     def parse_czi_done = run_parse_czi_tiles(
-        parse_czi_args.map { it[0] }, // spark URI
-        stitching_app,
+        parse_czi_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
+        stitching_app_container,
         'org.janelia.stitching.ParseCZITilesMetadata',
-        parse_czi_args.map { it[1] }, // app args
-        'parseCZITiles.log',
-        terminate_stitching_name,
-        spark_conf,
-        parse_czi_args.map { it[2] }, // spark working dir
+        parse_czi_args.map { it[2] }, // app args
         spark_workers,
         spark_worker_cores,
         spark_gbmem_per_core,
         spark_driver_cores,
-        spark_driver_memory,
-        spark_driver_stack_size,
-        spark_driver_logconfig,
-        spark_driver_deploy_mode
+        spark_driver_memory
     )
     // prepare czi to n5
     def czi_to_n5_args = prepare_app_args(
         "czi2N5",
-        parse_czi_done,
+        parse_czi_done, // tuple: [spark_uri, spark_work_dir]
         indexed_spark_work_dirs,
         indexed_acq_data,
         { acq_name, stitching_dir ->
@@ -213,22 +196,15 @@ workflow stitch {
         }
     )
     def czi_to_n5_done = run_czi2n5(
-        czi_to_n5_args.map { it[0] }, // spark URI
-        stitching_app,
+        czi_to_n5_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
+        stitching_app_container,
         'org.janelia.stitching.ConvertCZITilesToN5Spark',
-        czi_to_n5_args.map { it[1] }, // app args
-        'czi2n5.log',
-        terminate_stitching_name,
-        spark_conf,
-        czi_to_n5_args.map { it[2] }, // spark working dir
+        czi_to_n5_args.map { it[2] }, // app args
         spark_workers,
         spark_worker_cores,
         spark_gbmem_per_core,
         spark_driver_cores,
-        spark_driver_memory,
-        spark_driver_stack_size,
-        spark_driver_logconfig,
-        spark_driver_deploy_mode
+        spark_driver_memory
     )
     def flatfield_done = czi_to_n5_done;
     if (params.flatfield_correction) {
@@ -244,22 +220,15 @@ workflow stitch {
             }
         )
         flatfield_done = run_flatfield_correction(
-            flatfield_args.map { it[0] }, // spark URI
-            stitching_app,
+            flatfield_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
+            stitching_app_container,
             'org.janelia.flatfield.FlatfieldCorrection',
-            flatfield_args.map { it[1] }, // app args
-            'flatfieldCorrection.log',
-            terminate_stitching_name,
-            spark_conf,
-            flatfield_args.map { it[2] }, // spark working dir
+            czi_to_n5_args.map { it[2] }, // app args
             spark_workers,
             spark_worker_cores,
             spark_gbmem_per_core,
             spark_driver_cores,
-            spark_driver_memory,
-            spark_driver_stack_size,
-            spark_driver_logconfig,
-            spark_driver_deploy_mode
+            spark_driver_memory
         )
     }
     // prepare retile args
@@ -274,22 +243,15 @@ workflow stitch {
         }
     )
     def retile_done = run_retile(
-        retile_args.map { it[0] }, // spark URI
-        stitching_app,
+        retile_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
+        stitching_app_container,
         'org.janelia.stitching.ResaveAsSmallerTilesSpark',
-        retile_args.map { it[1] }, // app args
-        'retileImages.log',
-        terminate_stitching_name,
-        spark_conf,
-        retile_args.map { it[2] }, // spark working dir
+        czi_to_n5_args.map { it[2] }, // app args
         spark_workers,
         spark_worker_cores,
         spark_gbmem_per_core,
         spark_driver_cores,
-        spark_driver_memory,
-        spark_driver_stack_size,
-        spark_driver_logconfig,
-        spark_driver_deploy_mode
+        spark_driver_memory
     )
     // prepare stitching args
     def stitching_args = prepare_app_args(
@@ -305,22 +267,15 @@ workflow stitch {
         }
     )
     def stitching_done = run_stitching(
-        stitching_args.map { it[0] }, // spark URI
-        stitching_app,
+        stitching_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
+        stitching_app_container,
         'org.janelia.stitching.StitchingSpark',
-        stitching_args.map { it[1] }, // app args
-        'stitching.log',
-        terminate_stitching_name,
-        spark_conf,
-        stitching_args.map { it[2] }, // spark working dir
+        czi_to_n5_args.map { it[2] }, // app args
         spark_workers,
         spark_worker_cores,
         spark_gbmem_per_core,
         spark_driver_cores,
-        spark_driver_memory,
-        spark_driver_stack_size,
-        spark_driver_logconfig,
-        spark_driver_deploy_mode
+        spark_driver_memory
     )
     // prepare fuse args
     def fuse_args = prepare_app_args(
@@ -335,27 +290,19 @@ workflow stitch {
         }
     )
     def fuse_done = run_fuse(
-        fuse_args.map { it[0] }, // spark URI
-        stitching_app,
+        fuse_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
+        stitching_app_container,
         'org.janelia.stitching.StitchingSpark',
-        fuse_args.map { it[1] }, // app args
-        'fuse.log',
-        terminate_stitching_name,
-        spark_conf,
-        fuse_args.map { it[2] }, // spark working dir
+        czi_to_n5_args.map { it[2] }, // app args
         spark_workers,
         spark_worker_cores,
         spark_gbmem_per_core,
         spark_driver_cores,
-        spark_driver_memory,
-        spark_driver_stack_size,
-        spark_driver_logconfig,
-        spark_driver_deploy_mode
+        spark_driver_memory
     )
     // terminate stitching cluster
-    done = SPARK_STOP(
-        fuse_done.map { it[1] },
-        terminate_stitching_name
+    done = SPARK_TERMINATE(
+        fuse_done,
     ) | join(indexed_spark_work_dirs, by:1) | map {
         [ it[2], it[0] ]
     } | join(indexed_acq_data) | map {
@@ -381,13 +328,13 @@ def prepare_app_args(app_name,
     } | join(indexed_acq_data) | map {
         log.debug "Create ${app_name} inputs from ${it}"
         def idx = it[0]
+        def spark_work_dir = it[1] // spark work dir comes from previous result
         def acq_name = it[2]
         def spark_uri = it[3]
         def stitching_dir = it[4]
-        def spark_work_dir = it[1] // spark work dir comes from previous result
         log.debug "Get ${app_name} args using: (${acq_name}, ${stitching_dir})"
         def app_args = app_args_closure.call(acq_name, stitching_dir)
-        def app_inputs = [ spark_uri, app_args, spark_work_dir ]
+        def app_inputs = [ spark_uri, spark_work_dir, app_args ]
         log.debug "${app_name} app input ${idx}: ${app_inputs}"
         return app_inputs
     }
