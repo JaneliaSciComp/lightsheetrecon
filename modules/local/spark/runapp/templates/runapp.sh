@@ -1,15 +1,16 @@
 #!/usr/bin/env bash -ue
 
-spark_work_dir="!{spark_work_dir}"
-spark_uri="{!spark_uri}"
+cluster_work_dir="!{cluster_work_dir}"
+spark_uri="!{spark_uri}"
 spark_config_filepath="!{spark_config_filepath}"
-main_class="{!spark_app_main_class}"
-spark_app_args="{!spark_app_args}"
-parallelism="{!parallelism}"
-executor_cores="${!executor_cores}"
-executor_memory="{!executor_memory}"
-driver_cores="{!driver_cores_sh}"
-driver_memory="{!driver_memory_sh}"
+main_class="!{spark_app_main_class}"
+spark_app_args="!{spark_app_args}"
+args="!{args}"
+parallelism="!{parallelism}"
+worker_cores="!{worker_cores}"
+executor_memory="!{executor_memory}"
+driver_cores="!{driver_cores_sh}"
+driver_memory="!{driver_memory_sh}"
 
 echo "Starting the Spark driver"
 
@@ -18,7 +19,7 @@ export SPARK_ENV_LOADED=
 export SPARK_HOME=/opt/spark
 export PYSPARK_PYTHONPATH_SET=
 export PYTHONPATH="/opt/spark/python"
-export SPARK_LOG_DIR="${spark_work_dir}"
+export SPARK_LOG_DIR="${cluster_work_dir}"
 set +u
 . "/opt/spark/sbin/spark-config.sh"
 . "/opt/spark/bin/load-spark-env.sh"
@@ -60,9 +61,9 @@ fi
     --class ${main_class} \
     --conf spark.files.openCostInBytes=0 \
     --conf spark.default.parallelism=${parallelism} \
-    --conf spark.executor.cores=${executor_cores} \
+    --conf spark.executor.cores=${worker_cores} \
     --executor-memory ${executor_memory} \
     --conf spark.driver.cores=${driver_cores} \
     --driver-memory ${driver_memory} \
     /app/app.jar \
-    !{spark_app_args} !{args}
+    ${spark_app_args} ${args}

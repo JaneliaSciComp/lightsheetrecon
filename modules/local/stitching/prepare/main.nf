@@ -8,18 +8,18 @@ process STITCHING_PREPARE {
     val(acq_name)
 
     output:
-    tuple val(acq_name), path(acq_output_dir)
+    tuple val(acq_name), val(acq_fullpath)
 
     script:
-    acq_output_dir = "${output_dir}/${acq_name}"
-    mvl = "${input_dir}/${acq_name}.mvl"
-    mvl_link_dir = "${acq_output_dir}"
-    czi = "${input_dir}/${acq_name}*.czi"
-    czi_link_dir = "${acq_output_dir}"
+    abs_input_dir = input_dir.resolveSymLink().toString()
+    abs_output_dir = output_dir.resolveSymLink().toString()
+    acq_fullpath = "${abs_output_dir}/stitching/${acq_name}/"
+    mvl = "${abs_input_dir}/${acq_name}.mvl"
+    czi = "${abs_input_dir}/${acq_name}*.czi"
     """
     umask 0002
-    mkdir -p ${acq_output_dir}
-    ln -s ${mvl} ${mvl_link_dir} || true
-    ln -s ${czi} ${czi_link_dir} || true
+    mkdir -p $acq_fullpath
+    ln -s ${mvl} $acq_fullpath || true
+    ln -s ${czi} $acq_fullpath || true
     """
 }

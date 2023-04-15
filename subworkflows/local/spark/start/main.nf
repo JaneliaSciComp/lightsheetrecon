@@ -8,27 +8,31 @@ workflow SPARK_START {
     take:
     spark_local_dir
     spark_work_dir
+    input_dir
+    output_dir
     spark_workers
     spark_worker_cores
-    spark_gbmem_per_core
+    spark_gb_per_core
 
     main:
     // prepare spark cluster params
-    def prepare_input = spark_work_dir.map { [spark_local_dir, file(it).parent, file(it).name] }
+    def prepare_input = spark_work_dir.map { [
+        file(it).parent,
+        file(it).name
+    ] }
     SPARK_PREPARE(prepare_input)
 
     // start cluster manager and wait for it to be ready
     def manager_input = SPARK_PREPARE.out.map {
-        spark_local_dir = it[0]
-        spark_work_dir = it[1].toString()+File.separator+it[2]
+        cluster_work_dir = it
         log.debug "Spark local directory: ${spark_local_dir}"
-        log.debug "Spark work directory: ${spark_work_dir}"
-        [spark_local_dir, spark_work_dir]
+        log.debug "Cluster work directory: ${cluster_work_dir}"
+        cluster_work_dir
     }
 
     // start the Spark manager
     // this runs indefinitely until SPARK_TERMINATE is called
-    SPARK_STARTMANAGER(manager_input)
+    SPARK_STARTMANAGER(spark_local_dir, manager_input)
 
     // start a watcher that waits for the manager to be ready
     SPARK_WAITFORMANAGER(manager_input) // channel: [val(spark_uri, val(spark_work_dir))]
@@ -41,12 +45,19 @@ workflow SPARK_START {
     // channel: [val(spark_uri), val(spark_work_dir), val(worker_id)]
     def workers_with_work_dirs = SPARK_WAITFORMANAGER.out.combine(workers_list)
 
+    workers_with_work_dirs.subscribe {
+        log.debug "workers_with_work_dirs: ${it}"
+    }
+
     // start workers
     // these run indefinitely until SPARK_TERMINATE is called
     SPARK_STARTWORKER(
+        spark_local_dir,
         workers_with_work_dirs,
+        input_dir,
+        output_dir,
         spark_worker_cores,
-        spark_worker_cores * spark_gbmem_per_core,
+        spark_worker_cores * spark_gb_per_core,
     )
 
     // wait for cluster to start
@@ -59,10 +70,11 @@ workflow SPARK_START {
     | groupTuple(by: [0,1]) // wait for all workers to start
     | map {
         log.debug "Spark cluster started:"
+        log.debug "  Spark URI: ${it[0]}"
         log.debug "  Spark work directory: ${it[1]}"
         log.debug "  Number of workers: ${spark_workers}"
         log.debug "  Cores per worker: ${spark_worker_cores}"
-        log.debug "  GB per worker core: ${spark_gbmem_per_core}"
+        log.debug "  GB per worker core: ${spark_gb_per_core}"
         it[0..1]
     }
 

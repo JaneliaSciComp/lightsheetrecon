@@ -1,6 +1,6 @@
 #!/usr/bin/env bash -ue
 
-work_dir="!{spark_work_dir_parent}/!{spark_work_dir_name}"
+work_dir="!{spark_work_dir}/!{spark_work_dir_name}"
 
 if [[ ! -d "${work_dir}" ]] ; then
     echo "Creating work directory: ${work_dir}"

@@ -5,14 +5,15 @@ include {
 } from '../utils'
 
 process SPARK_STARTMANAGER {
-    label 'process_single'
     container 'multifish/biocontainers-spark:3.1.3'
+    label 'process_single'
 
     input:
-    tuple path(spark_local_dir), path(spark_work_dir)
+    val(spark_local_dir)
+    path(cluster_work_dir)
 
     output:
-    tuple path(spark_local_dir), path(spark_work_dir)
+    val(cluster_work_fullpath)
 
     when:
     task.ext.when == null || task.ext.when
@@ -20,9 +21,10 @@ process SPARK_STARTMANAGER {
     shell:
     args = task.ext.args ?: ''
     sleep_secs = task.ext.sleep_secs ?: '1'
-    spark_config_filepath = get_spark_config_filepath(spark_work_dir)
-    spark_master_log_file = get_spark_master_log(spark_work_dir)
-    terminate_file_name = get_terminate_file_name(spark_work_dir)
+    spark_config_filepath = get_spark_config_filepath(cluster_work_dir)
+    spark_master_log_file = get_spark_master_log(cluster_work_dir)
+    terminate_file_name = get_terminate_file_name(cluster_work_dir)
     container_engine = workflow.containerEngine
+    cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
     template 'startmanager.sh'
 }

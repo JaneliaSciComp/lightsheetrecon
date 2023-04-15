@@ -7,13 +7,14 @@ process SPARK_TERMINATE {
     container 'multifish/biocontainers-spark:3.1.3'
 
     input:
-    tuple val(spark_uri), path(spark_work_dir)
+    tuple val(spark_uri), path(cluster_work_dir)
 
     output:
-    tuple val(spark_uri), path(spark_work_dir)
+    tuple val(spark_uri), val(cluster_work_fullpath)
 
     script:
-    terminate_file_name = get_terminate_file_name(spark_work_dir)
+    cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
+    terminate_file_name = get_terminate_file_name(cluster_work_dir)
     """
     echo "DONE" > ${terminate_file_name}
     cat ${terminate_file_name}

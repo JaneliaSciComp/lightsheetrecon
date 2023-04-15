@@ -37,7 +37,7 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
-include { STITCHING } from '../subworkflows/local/stitching/main'
+include { STITCH } from '../subworkflows/local/stitching/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,7 +63,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 
 workflow LIGHTSHEETRECON {
     ch_acq_names = Channel.fromList(params.acq_names.tokenize(','))
-    stitching_results = STITCHING(
+    stitching_results = STITCH(
         ch_acq_names,
         params.input,
         params.outdir,
@@ -77,11 +77,11 @@ workflow LIGHTSHEETRECON {
         params.stitching_padding,
         params.stitching_blur_sigma,
         params.stitching_czi_pattern,
-        params.spark_workers,
-        params.spark_worker_cores,
-        params.gb_per_core,
-        params.driver_cores,
-        params.driver_memory
+        params.spark_workers as int,
+        params.spark_worker_cores as int,
+        params.spark_gb_per_core as int,
+        params.spark_driver_cores as int,
+        params.spark_driver_memory
     ) // [ acq, stitching_dir ]
     stitching_results.subscribe { log.debug "Stitching results: $it" }
 

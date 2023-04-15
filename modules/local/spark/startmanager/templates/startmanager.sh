@@ -1,7 +1,7 @@
 #!/usr/bin/env bash -ue
 
-spark_work_dir="!{spark_work_dir}"
 spark_local_dir="!{spark_local_dir}"
+cluster_work_dir="!{cluster_work_dir}"
 spark_master_log_file="!{spark_master_log_file}"
 spark_config_filepath="!{spark_config_filepath}"
 terminate_file_name="!{terminate_file_name}"
@@ -29,7 +29,7 @@ export SPARK_ENV_LOADED=
 export SPARK_HOME=/opt/spark
 export PYSPARK_PYTHONPATH_SET=
 export PYTHONPATH="/opt/spark/python"
-export SPARK_LOG_DIR="${spark_work_dir}"
+export SPARK_LOG_DIR="${cluster_work_dir}"
 set +u
 . "/opt/spark/sbin/spark-config.sh"
 . "/opt/spark/bin/load-spark-env.sh"

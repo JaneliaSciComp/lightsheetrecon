@@ -1,6 +1,6 @@
 #!/usr/bin/env bash -ue
 
-spark_work_dir="!{spark_work_dir}"
+cluster_work_dir="!{cluster_work_dir}"
 spark_uri="!{spark_uri}"
 worker_id="!{worker_id}"
 worker_cores="!{worker_cores}"
@@ -18,7 +18,7 @@ export SPARK_ENV_LOADED=
 export SPARK_HOME=/opt/spark
 export PYSPARK_PYTHONPATH_SET=
 export PYTHONPATH="/opt/spark/python"
-export SPARK_LOG_DIR="${spark_work_dir}"
+export SPARK_LOG_DIR="${cluster_work_dir}"
 export SPARK_WORKER_OPTS="-Dspark.worker.cleanup.enabled=true -Dspark.worker.cleanup.interval=30 -Dspark.worker.cleanup.appDataTtl=1 -Dspark.port.maxRetries=64"
 set +u
 . "/opt/spark/sbin/spark-config.sh"
@@ -57,7 +57,7 @@ fi
     ${spark_uri} \
     -c ${worker_cores} \
     -m ${worker_mem_in_gb}G \
-    -d ${spark_work_dir} \
+    -d ${cluster_work_dir} \
     -h ${local_ip} \
     --properties-file ${spark_config_filepath} \
     !{args} &> ${spark_worker_log_file} &
