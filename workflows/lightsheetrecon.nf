@@ -60,7 +60,7 @@ workflow LIGHTSHEETRECON {
         params.axis_mapping,
         params.stitching_block_size,
         params.retile_z_size,
-        params.acq_ref,
+        params.stitching_channel,
         params.stitching_mode,
         params.stitching_padding,
         params.stitching_blur_sigma,

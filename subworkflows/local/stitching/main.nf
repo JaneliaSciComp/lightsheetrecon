@@ -12,6 +12,7 @@ include {
 } from '../../../modules/local/spark/runapp/main'
 
 include {
+    parse_stitching_channel;
     entries_inputs_args;
     index_channel;
 } from './utils'
@@ -32,7 +33,7 @@ workflow STITCH {
     axis_mapping
     stitching_block_size
     retile_z_size
-    registration_channel
+    stitching_channel
     stitching_mode
     stitching_padding
     stitching_blur_sigma
@@ -45,7 +46,7 @@ workflow STITCH {
 
     main:
     ch_versions = Channel.empty()
-    def stitching_app_container = "multifish/biocontainers-stitching-spark:1.9.0"
+    def stitching_app_container = params.stitching_app_container
 
     def spark_work_dir = "${output_dir}/spark/${workflow.sessionId}"
     if (!file(spark_work_dir).mkdirs()) {
@@ -117,7 +118,7 @@ workflow STITCH {
 
     // prepare parse czi tiles
     def parseczi_args = prepare_app_args(
-        "parseCZI",
+        "parseczi",
         indexed_spark_work_dirs, // to start the chain we just need a tuple that has the working dir as the 2nd element
         indexed_spark_work_dirs,
         indexed_acq_data,
@@ -140,11 +141,11 @@ workflow STITCH {
         spark_driver_cores,
         spark_driver_memory
     )
-    ch_versions = ch_versions.mix(PARSECZI.out.versions)
+    // ch_versions = ch_versions.mix(PARSECZI.out.versions)
 
     // prepare czi to n5
     def czi_to_n5_args = prepare_app_args(
-        "czi2N5",
+        "czi2n5",
         parse_out.spark_context, // tuple: [spark_uri, spark_work_dir]
         indexed_spark_work_dirs,
         indexed_acq_data,
@@ -166,13 +167,13 @@ workflow STITCH {
         spark_driver_cores,
         spark_driver_memory
     )
-    ch_versions = ch_versions.mix(CZI2N5.out.versions)
+    // ch_versions = ch_versions.mix(CZI2N5.out.versions)
 
     def flatfield_done = CZI2N5.out
     if (params.flatfield_correction) {
         // prepare flatfield args
         def flatfield_args = prepare_app_args(
-            "flatfield",
+            "flatfield_correction",
             CZI2N5.out.spark_context,
             indexed_spark_work_dirs,
             indexed_acq_data,
@@ -194,7 +195,7 @@ workflow STITCH {
             spark_driver_cores,
             spark_driver_memory
         )
-        ch_versions = ch_versions.mix(flatfield_done.versions)
+        // ch_versions = ch_versions.mix(flatfield_done.versions)
     }
     // prepare retile args
     def retile_args = prepare_app_args(
@@ -220,7 +221,7 @@ workflow STITCH {
         spark_driver_cores,
         spark_driver_memory
     )
-    ch_versions = ch_versions.mix(RETILE.out.versions)
+    // ch_versions = ch_versions.mix(RETILE.out.versions)
 
     // prepare stitching args
     def stitching_args = prepare_app_args(
@@ -231,7 +232,8 @@ workflow STITCH {
         { acq_name, stitching_dir ->
             def retiled_n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5-retiled', '.json')
             def correction_args = entries_inputs_args(stitching_dir, channels, '--correction-images-paths', '-n5', '.json')
-            def ref_channel_arg = registration_channel ? "-r ${registration_channel}" : ''
+            def channel = parse_stitching_channel(stitching_channel)
+            def ref_channel_arg = channel ? "-r ${channel}" : ''
             return "--stitch ${ref_channel_arg} ${retiled_n5_channels_args} ${correction_args} --mode ${stitching_mode} --padding ${stitching_padding} --blurSigma ${stitching_blur_sigma}"
         }
     )
@@ -248,7 +250,7 @@ workflow STITCH {
         spark_driver_cores,
         spark_driver_memory
     )
-    ch_versions = ch_versions.mix(STITCHING.out.versions)
+    // ch_versions = ch_versions.mix(STITCHING.out.versions)
 
     // prepare fuse args
     def fuse_args = prepare_app_args(
@@ -275,7 +277,7 @@ workflow STITCH {
         spark_driver_cores,
         spark_driver_memory
     )
-    ch_versions = ch_versions.mix(FUSE.out.versions)
+    // ch_versions = ch_versions.mix(FUSE.out.versions)
 
     // terminate stitching cluster
     done = SPARK_TERMINATE(
