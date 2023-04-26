@@ -19,7 +19,7 @@ process STITCHING_PREPARE {
     """
     umask 0002
     mkdir -p $acq_fullpath
-    ln -s ${mvl} $acq_fullpath || true
-    ln -s ${czi} $acq_fullpath || true
+    ln -s $mvl $acq_fullpath || true
+    ln -s $czi $acq_fullpath || true
     """
 }
