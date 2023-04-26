@@ -21,7 +21,8 @@ process SPARK_RUNAPP {
     val(driver_memory)
 
     output:
-    tuple val(spark_uri), val(cluster_work_fullpath)
+    tuple val(spark_uri), val(cluster_work_fullpath), emit: cluster
+    path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when

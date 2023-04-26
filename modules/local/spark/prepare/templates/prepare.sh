@@ -9,9 +9,3 @@ else
     echo "Cleaning existing work directory: ${work_dir}"
     rm -f ${work_dir}/spark* || true
 fi
-
-spark_version=`ls /opt/spark/jars/spark-core* | sed -e "s/.\(.*\)-\(.*\)\.jar/\2/"`
-cat <<-END_VERSIONS > versions.yml
-"!{task.process}":
-    spark: ${spark_version}
-END_VERSIONS

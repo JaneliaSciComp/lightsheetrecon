@@ -53,6 +53,14 @@ else
     fi
 fi
 
+spark_version=`cat /opt/spark/VERSION`
+sitching_spark_version=`cat /app/VERSION`
+cat <<-END_VERSIONS > versions.yml
+"!{task.process}":
+    spark: $spark_version
+    $main_class: $sitching_spark_version
+END_VERSIONS
+
 /opt/spark/bin/spark-class org.apache.spark.deploy.SparkSubmit \
     --properties-file ${spark_config_filepath} \
     --conf spark.driver.host=${local_ip} \
