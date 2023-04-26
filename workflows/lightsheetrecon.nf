@@ -70,16 +70,15 @@ workflow LIGHTSHEETRECON {
         params.spark_gb_per_core as int,
         params.spark_driver_cores as int,
         params.spark_driver_memory
-    ) // [ acq, stitching_dir ]
-    //stitching_results.subscribe { log.debug "Stitching results: $it" }
+    )
     ch_versions = ch_versions.mix(STITCH.out.versions)
 
     //
     // MODULE: Pipeline reporting
     //
-    // CUSTOM_DUMPSOFTWAREVERSIONS (
-    //     ch_versions.unique().collectFile(name: 'collated_versions.yml')
-    // )
+    CUSTOM_DUMPSOFTWAREVERSIONS (
+        ch_versions.unique().collectFile(name: 'collated_versions.yml')
+    )
 }
 
 /*

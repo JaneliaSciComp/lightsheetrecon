@@ -45,7 +45,6 @@ workflow STITCH {
 
     main:
     ch_versions = Channel.empty()
-    //def stitching_app_container = "multifish/biocontainers-spark:3.1.3"
     def stitching_app_container = "multifish/biocontainers-stitching-spark:1.9.0"
 
     def spark_work_dir = "${output_dir}/spark/${workflow.sessionId}"
@@ -117,7 +116,7 @@ workflow STITCH {
         | join(indexed_spark_work_dirs)
 
     // prepare parse czi tiles
-    def PARSECZI_args = prepare_app_args(
+    def parseczi_args = prepare_app_args(
         "parseCZI",
         indexed_spark_work_dirs, // to start the chain we just need a tuple that has the working dir as the 2nd element
         indexed_spark_work_dirs,
@@ -128,11 +127,11 @@ workflow STITCH {
             return "${mvl_inputs} ${czi_inputs} -r ${resolution} -a ${axis_mapping} -b ${stitching_dir}"
         }
     )
-    PARSECZI(
-        PARSECZI_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
+    def parse_out = PARSECZI(
+        parseczi_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
         stitching_app_container,
         'org.janelia.stitching.ParseCZITilesMetadata',
-        PARSECZI_args.map { it[2] }, // app args
+        parseczi_args.map { it[2] }, // app args
         input_dir,
         output_dir,
         spark_workers,
@@ -146,7 +145,7 @@ workflow STITCH {
     // prepare czi to n5
     def czi_to_n5_args = prepare_app_args(
         "czi2N5",
-        PARSECZI.out.cluster, // tuple: [spark_uri, spark_work_dir]
+        parse_out.spark_context, // tuple: [spark_uri, spark_work_dir]
         indexed_spark_work_dirs,
         indexed_acq_data,
         { acq_name, stitching_dir ->
@@ -174,7 +173,7 @@ workflow STITCH {
         // prepare flatfield args
         def flatfield_args = prepare_app_args(
             "flatfield",
-            CZI2N5.out.cluster,
+            CZI2N5.out.spark_context,
             indexed_spark_work_dirs,
             indexed_acq_data,
             { acq_name, stitching_dir ->
@@ -200,7 +199,7 @@ workflow STITCH {
     // prepare retile args
     def retile_args = prepare_app_args(
         "retile",
-        flatfield_done.cluster,
+        flatfield_done.spark_context,
         indexed_spark_work_dirs,
         indexed_acq_data,
         { acq_name, stitching_dir ->
@@ -226,7 +225,7 @@ workflow STITCH {
     // prepare stitching args
     def stitching_args = prepare_app_args(
         "stitching",
-        RETILE.out.cluster,
+        RETILE.out.spark_context,
         indexed_spark_work_dirs,
         indexed_acq_data,
         { acq_name, stitching_dir ->
@@ -254,7 +253,7 @@ workflow STITCH {
     // prepare fuse args
     def fuse_args = prepare_app_args(
         "fuse",
-        STITCHING.out.cluster,
+        STITCHING.out.spark_context,
         indexed_spark_work_dirs,
         indexed_acq_data,
         { acq_name, stitching_dir ->
@@ -280,7 +279,7 @@ workflow STITCH {
 
     // terminate stitching cluster
     done = SPARK_TERMINATE(
-        FUSE.out.cluster,
+        FUSE.out.spark_context,
     ) | join(indexed_spark_work_dirs, by:1) | map {
         [ it[2], it[0] ]
     } | join(indexed_acq_data) | map {
