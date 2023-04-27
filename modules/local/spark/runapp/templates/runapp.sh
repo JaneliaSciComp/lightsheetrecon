@@ -25,32 +25,41 @@ set +u
 . "/opt/spark/bin/load-spark-env.sh"
 set -u
 
-# Determine the IP address of the current host (same as startmanager.sh)
-local_ip=
-if [ "!{workflow.containerEngine}" = "docker" ]; then
-    for interface in /sys/class/net/{eth*,en*,em*}; do
-        [ -e $interface ] && \
-        [ `cat $interface/operstate` == "up" ] && \
-        local_ip=$(ifconfig `basename $interface` | grep "inet " | awk '$1=="inet" {print $2; exit}' | sed s/addr://g)
-        if [[ "$local_ip" != "" ]]; then
-            echo "Use Spark IP: $local_ip"
-            break
-        fi
-    done
-    if [[ -z "${local_ip}" ]] ; then
-        echo "Could not determine local IP: local_ip is empty"
-        exit 1
-    fi
+if [ "${spark_uri}" = "local[*]" ]; then
+    spark_cluster_params=
 else
-    # Take the last IP that's listed by hostname -i.
-    # This hack works on Janelia Cluster and AWS EC2.
-    # It won't be necessary at all once we add a local option for Spark apps.
-    local_ip=`hostname -i | rev | cut -d' ' -f1 | rev`
-    echo "Use Spark IP: $local_ip"
-    if [[ -z "${local_ip}" ]] ; then
-        echo "Could not determine local IP: local_ip is empty"
-        exit 1
+    # Determine the IP address of the current host (same as startmanager.sh)
+    local_ip=
+    if [ "!{workflow.containerEngine}" = "docker" ]; then
+        for interface in /sys/class/net/{eth*,en*,em*}; do
+            [ -e $interface ] && \
+            [ `cat $interface/operstate` == "up" ] && \
+            local_ip=$(ifconfig `basename $interface` | grep "inet " | awk '$1=="inet" {print $2; exit}' | sed s/addr://g)
+            if [[ "$local_ip" != "" ]]; then
+                echo "Use Spark IP: $local_ip"
+                break
+            fi
+        done
+        if [[ -z "${local_ip}" ]] ; then
+            echo "Could not determine local IP: local_ip is empty"
+            exit 1
+        fi
+    else
+        # Take the last IP that's listed by hostname -i.
+        # This hack works on Janelia Cluster and AWS EC2.
+        # It won't be necessary at all once we add a local option for Spark apps.
+        local_ip=`hostname -i | rev | cut -d' ' -f1 | rev`
+        echo "Use Spark IP: $local_ip"
+        if [[ -z "${local_ip}" ]] ; then
+            echo "Could not determine local IP: local_ip is empty"
+            exit 1
+        fi
     fi
+    spark_cluster_params=" \
+    --properties-file ${spark_config_filepath} \
+    --conf spark.driver.host=${local_ip} \
+    --conf spark.driver.bindAddress=${local_ip} \
+    "
 fi
 
 spark_version=`cat /opt/spark/VERSION`
@@ -62,9 +71,7 @@ cat <<-END_VERSIONS > versions.yml
 END_VERSIONS
 
 /opt/spark/bin/spark-class org.apache.spark.deploy.SparkSubmit \
-    --properties-file ${spark_config_filepath} \
-    --conf spark.driver.host=${local_ip} \
-    --conf spark.driver.bindAddress=${local_ip} \
+    $spark_cluster_params \
     --master ${spark_uri} \
     --class ${main_class} \
     --conf spark.files.openCostInBytes=0 \

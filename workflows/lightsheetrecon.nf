@@ -4,8 +4,6 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
-
 // Validate input parameters
 WorkflowLightsheetrecon.initialise(params, log)
 
@@ -15,7 +13,7 @@ def checkPathParamList = [ params.input, params.outdir ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 // Check mandatory parameters
-//if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
+//if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input dir not specified!' }
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,13 +43,10 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-// Info required for completion email and summary
-// def multiqc_report = []
-
 workflow LIGHTSHEETRECON {
     ch_versions = Channel.empty()
     ch_acq_names = Channel.fromList(params.acq_names.tokenize(','))
-    stitching_results = STITCH(
+    stitch_out = STITCH(
         ch_acq_names,
         params.input,
         params.outdir,
@@ -65,6 +60,8 @@ workflow LIGHTSHEETRECON {
         params.stitching_padding,
         params.stitching_blur_sigma,
         params.stitching_czi_pattern,
+        params.flatfield_correction,
+        params.spark_cluster,
         params.spark_workers as int,
         params.spark_worker_cores as int,
         params.spark_gb_per_core as int,
@@ -72,6 +69,8 @@ workflow LIGHTSHEETRECON {
         params.spark_driver_memory
     )
     ch_versions = ch_versions.mix(STITCH.out.versions)
+
+    stitch_out.done.subscribe { log.debug "STITCH result: $it" }
 
     //
     // MODULE: Pipeline reporting
