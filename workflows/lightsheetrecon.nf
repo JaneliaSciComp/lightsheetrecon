@@ -5,15 +5,15 @@
 */
 
 // Validate input parameters
-WorkflowLightsheetrecon.initialise(params, log)
+//WorkflowLightsheetrecon.initialise(params, log)
+if (params.spark_workers > 1 && !params.spark_cluster) {
+    log.error "You must enable --spark_cluster if --spark_workers is greater than 1."
+    System.exit(1)
+}
 
-// TODO nf-core: Add all file path parameters for the pipeline to the list below
 // Check input path parameters to see if they exist
 def checkPathParamList = [ params.input, params.outdir ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-
-// Check mandatory parameters
-//if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input dir not specified!' }
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

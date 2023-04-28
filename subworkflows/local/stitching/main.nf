@@ -54,12 +54,14 @@ workflow STITCH {
     if (!file(spark_work_dir).mkdirs()) {
         error "Could not create Spark working dir at $spark_work_dir"
     }
-    acq_stitching_dir_pairs = STITCHING_PREPARE(
+    // tuple: [acq_name, acq_stitching_output_dir]
+    STITCHING_PREPARE(
         input_dir,
         output_dir,
         ch_acq_names
     )
-    acq_inputs = acq_stitching_dir_pairs
+    // map: {acq_names:channel, stitching_dirs:channel, spark_work_dirs:channel}
+    acq_inputs = STITCHING_PREPARE.out
         .map {
             acq_name = it[0]
             acq_stitching_dir = it[1]
@@ -91,19 +93,21 @@ workflow STITCH {
     def spark_cluster_res = acq_inputs.spark_work_dirs.map { [ 'local[*]', it ] }
     driver_cores = spark_driver_cores
     driver_memory = spark_driver_memory
+    workers = spark_workers
     if (spark_cluster) {
         spark_cluster_res = SPARK_START(
             spark_local_dir,
             acq_inputs.spark_work_dirs,
             input_dir,
             output_dir,
-            spark_workers,
+            workers,
             spark_worker_cores,
             spark_gb_per_core
         )
     }
     else {
         // When running locally, the driver needs enough resources to run a spark worker
+        workers = 1
         driver_cores = driver_cores + spark_worker_cores
         driver_memory = (2 + spark_worker_cores * spark_gb_per_core) + " GB"
     }
@@ -112,7 +116,6 @@ workflow STITCH {
 
     // print spark cluster result
     // channel: [ spark_uri, spark_work_dir ]
-    spark_cluster_res.subscribe {  log.debug "Spark cluster result: $it"  }
 
     def indexed_spark_uris = spark_cluster_res
         .join(indexed_spark_work_dirs, by:1)
@@ -122,7 +125,7 @@ workflow STITCH {
             return indexed_uri
         }
 
-    // create a channel of tuples:  [index, spark_uri, acq, stitching_dir, spark_work_dir]
+    // create a channel of tuples: [index, spark_uri, acq, stitching_dir, spark_work_dir]
     def indexed_acq_data = indexed_acq_names
         | join(indexed_spark_uris)
         | join(indexed_stitching_dirs)
@@ -147,13 +150,13 @@ workflow STITCH {
         parseczi_args.map { it[2] }, // app args
         input_dir,
         output_dir,
-        spark_workers,
+        workers,
         spark_worker_cores,
         spark_gb_per_core,
         driver_cores,
         driver_memory
     )
-    // ch_versions = ch_versions.mix(PARSECZI.out.versions)
+    ch_versions = ch_versions.mix(PARSECZI.out.versions)
 
     // prepare czi to n5
     czi_to_n5_args = prepare_app_args(
@@ -179,7 +182,7 @@ workflow STITCH {
         driver_cores,
         driver_memory
     )
-    // ch_versions = ch_versions.mix(CZI2N5.out.versions)
+    ch_versions = ch_versions.mix(CZI2N5.out.versions)
 
     flatfield_done = CZI2N5.out
     if (flatfield_correction) {
@@ -201,13 +204,13 @@ workflow STITCH {
             flatfield_args.map { it[2] }, // app args
             input_dir,
             output_dir,
-            spark_workers,
+            workers,
             spark_worker_cores,
             spark_gb_per_core,
             driver_cores,
             driver_memory
         )
-        // ch_versions = ch_versions.mix(flatfield_done.versions)
+        ch_versions = ch_versions.mix(flatfield_done.versions)
     }
     // prepare retile args
     retile_args = prepare_app_args(
@@ -227,13 +230,13 @@ workflow STITCH {
         retile_args.map { it[2] }, // app args
         input_dir,
         output_dir,
-        spark_workers,
+        workers,
         spark_worker_cores,
         spark_gb_per_core,
         driver_cores,
         driver_memory
     )
-    // ch_versions = ch_versions.mix(RETILE.out.versions)
+    ch_versions = ch_versions.mix(RETILE.out.versions)
 
     // prepare stitching args
     stitching_args = prepare_app_args(
@@ -256,13 +259,13 @@ workflow STITCH {
         stitching_args.map { it[2] }, // app args
         input_dir,
         output_dir,
-        spark_workers,
+        workers,
         spark_worker_cores,
         spark_gb_per_core,
         driver_cores,
         driver_memory
     )
-    // ch_versions = ch_versions.mix(STITCHING.out.versions)
+    ch_versions = ch_versions.mix(STITCHING.out.versions)
 
     // prepare fuse args
     fuse_args = prepare_app_args(
@@ -283,13 +286,13 @@ workflow STITCH {
         fuse_args.map { it[2] }, // app args
         input_dir,
         output_dir,
-        spark_workers,
+        workers,
         spark_worker_cores,
         spark_gb_per_core,
         driver_cores,
         driver_memory
     )
-    // ch_versions = ch_versions.mix(FUSE.out.versions)
+    ch_versions = ch_versions.mix(FUSE.out.versions)
 
     // terminate stitching cluster
     if (spark_cluster) {
@@ -299,13 +302,14 @@ workflow STITCH {
             [ it[2], it[0] ]
         } | join(indexed_acq_data) | map {
             log.debug "Completed stitching for ${it}"
-            [ it[2], it[4] ] // acq_name, acq_stitching_dir
+            [ it[1], it[4] ] // spark_work_dir, stitching_dir
         }
     }
     else {
+        // [index, spark_uri, acq, stitching_dir, spark_work_dir]
         done = indexed_acq_data.map {
             log.debug "Completed stitching for ${it}"
-            [ it[2], it[3] ] // acq_name, acq_stitching_dir
+            [ it[4], it[3] ] // spark_work_dir, stitching_dir
         }
     }
 
@@ -314,12 +318,17 @@ workflow STITCH {
     versions = ch_versions
 }
 
+// Create the app arguments for a Spark App invocation
+// app_name: app name for logging purposes
+// spark_context: [ spark_uri, cluster_work_dir ]
+//
+//
 def prepare_app_args(app_name,
-                     previous_result_dirs,
+                     spark_context,
                      indexed_working_dirs,
                      indexed_acq_data,
                      app_args_closure) {
-    return previous_result_dirs | join(indexed_working_dirs, by: 1) | map {
+    return spark_context | join(indexed_working_dirs, by: 1) | map {
         // reverse the order in the tuple because the join key is the working dir
         def r = [ it[2], it[0] ]
         log.debug "Indexed result from: $it -> $r"
@@ -331,7 +340,7 @@ def prepare_app_args(app_name,
         def acq_name = it[2]
         def spark_uri = it[3]
         def stitching_dir = it[4]
-        log.debug "Get ${app_name} args using: (${acq_name}, ${stitching_dir})"
+        //log.debug "Get ${app_name} args using: (${acq_name}, ${stitching_dir})"
         def app_args = app_args_closure.call(acq_name, stitching_dir)
         def app_inputs = [ spark_uri, spark_work_dir, app_args ]
         log.debug "${app_name} app input ${idx}: ${app_inputs}"

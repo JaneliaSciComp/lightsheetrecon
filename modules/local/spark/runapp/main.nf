@@ -22,7 +22,7 @@ process SPARK_RUNAPP {
 
     output:
     tuple val(spark_uri), val(cluster_work_fullpath), emit: spark_context
-    path "versions.yml"
+    path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
