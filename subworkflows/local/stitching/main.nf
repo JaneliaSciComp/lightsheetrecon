@@ -33,7 +33,6 @@ workflow STITCH {
     axis_mapping
     stitching_block_size
     final_block_size_xy
-    retile_z_size
     stitching_channel
     stitching_mode
     stitching_padding
