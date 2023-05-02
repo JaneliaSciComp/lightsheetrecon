@@ -1,5 +1,5 @@
-include { SPARK_START } from '../../../subworkflows/local/spark/start/main'
-include { SPARK_TERMINATE } from '../../../modules/local/spark/terminate/main'
+include { SPARK_START       } from '../../../subworkflows/local/spark/start/main'
+include { SPARK_TERMINATE   } from '../../../modules/local/spark/terminate/main'
 include { STITCHING_PREPARE } from '../../../modules/local/stitching/prepare/main'
 
 include {
