@@ -212,40 +212,40 @@ workflow STITCH {
         )
         ch_versions = ch_versions.mix(flatfield_done.versions)
     }
-    // prepare retile args
-    retile_args = prepare_app_args(
-        "retile",
-        flatfield_done.spark_context,
-        indexed_spark_work_dirs,
-        indexed_acq_data,
-        { acq_name, stitching_dir ->
-            def retile_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5', '.json')
-            return "${retile_args} --size ${retile_z_size}"
-        }
-    )
-    RETILE(
-        retile_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
-        stitching_app_container,
-        'org.janelia.stitching.ResaveAsSmallerTilesSpark',
-        retile_args.map { it[2] }, // app args
-        input_dir,
-        output_dir,
-        workers,
-        spark_worker_cores,
-        spark_gb_per_core,
-        driver_cores,
-        driver_memory
-    )
-    ch_versions = ch_versions.mix(RETILE.out.versions)
+    // // prepare retile args
+    // retile_args = prepare_app_args(
+    //     "retile",
+    //     flatfield_done.spark_context,
+    //     indexed_spark_work_dirs,
+    //     indexed_acq_data,
+    //     { acq_name, stitching_dir ->
+    //         def retile_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5', '.json')
+    //         return "${retile_args} --size ${retile_z_size}"
+    //     }
+    // )
+    // RETILE(
+    //     retile_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
+    //     stitching_app_container,
+    //     'org.janelia.stitching.ResaveAsSmallerTilesSpark',
+    //     retile_args.map { it[2] }, // app args
+    //     input_dir,
+    //     output_dir,
+    //     workers,
+    //     spark_worker_cores,
+    //     spark_gb_per_core,
+    //     driver_cores,
+    //     driver_memory
+    // )
+    // ch_versions = ch_versions.mix(RETILE.out.versions)
 
     // prepare stitching args
     stitching_args = prepare_app_args(
         "stitching",
-        RETILE.out.spark_context,
+        flatfield_done.spark_context,
         indexed_spark_work_dirs,
         indexed_acq_data,
         { acq_name, stitching_dir ->
-            def retiled_n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5-retiled', '.json')
+            def retiled_n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5', '.json')
             def correction_args = entries_inputs_args(stitching_dir, channels, '--correction-images-paths', '-n5', '.json')
             def channel = parse_stitching_channel(stitching_channel)
             def ref_channel_arg = channel ? "-r ${channel}" : ''
@@ -274,7 +274,7 @@ workflow STITCH {
         indexed_spark_work_dirs,
         indexed_acq_data,
         { acq_name, stitching_dir ->
-            def stitched_n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5-retiled-final', '.json')
+            def stitched_n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5-final', '.json')
             def correction_args = entries_inputs_args(stitching_dir, channels, '--correction-images-paths', '-n5', '.json')
             return "--fuse ${stitched_n5_channels_args} ${correction_args} --blending --fill"
         }
