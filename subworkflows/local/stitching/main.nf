@@ -32,6 +32,7 @@ workflow STITCH {
     resolution
     axis_mapping
     stitching_block_size
+    final_block_size_xy
     retile_z_size
     stitching_channel
     stitching_mode
@@ -276,7 +277,7 @@ workflow STITCH {
         { acq_name, stitching_dir ->
             def stitched_n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5-final', '.json')
             def correction_args = entries_inputs_args(stitching_dir, channels, '--correction-images-paths', '-n5', '.json')
-            return "--fuse ${stitched_n5_channels_args} ${correction_args} --blending --fill"
+            return "--fuse ${stitched_n5_channels_args} ${correction_args} --blending --fill --n5BlockSize ${final_block_size_xy}"
         }
     )
     FUSE(
