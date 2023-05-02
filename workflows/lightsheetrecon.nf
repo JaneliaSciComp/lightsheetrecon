@@ -5,7 +5,6 @@
 */
 
 // Validate input parameters
-//WorkflowLightsheetrecon.initialise(params, log)
 if (params.spark_workers > 1 && !params.spark_cluster) {
     log.error "You must enable --spark_cluster if --spark_workers is greater than 1."
     System.exit(1)
@@ -21,9 +20,6 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-//
-// SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
-//
 include { STITCH } from '../subworkflows/local/stitching/main'
 
 /*
@@ -32,9 +28,6 @@ include { STITCH } from '../subworkflows/local/stitching/main'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-//
-// MODULE: Installed directly from nf-core/modules
-//
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 
 /*
@@ -87,8 +80,10 @@ workflow LIGHTSHEETRECON {
 */
 
 workflow.onComplete {
+    def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
+
     if (params.email || params.email_on_fail) {
-        NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+        NfcoreTemplate.email(workflow, params, summary_params, projectDir, log)
     }
     NfcoreTemplate.summary(workflow, params, log)
     if (params.hook_url) {
