@@ -4,7 +4,6 @@
     nf-core/lightsheetrecon
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Github : https://github.com/nf-core/lightsheetrecon
-
     Website: https://nf-co.re/lightsheetrecon
     Slack  : https://nfcore.slack.com/channels/lightsheetrecon
 ----------------------------------------------------------------------------------------
