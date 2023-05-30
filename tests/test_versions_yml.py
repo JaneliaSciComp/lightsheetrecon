@@ -18,7 +18,7 @@ def _get_workflow_names():
         for workflow in test_config:
             # https://github.com/nf-core/modules/pull/1242 - added to cover tests
             # that expect an error and therefore will not generate a versions.yml
-            if 'exit_code' not in workflow:
+            if "exit_code" not in workflow:
                 yield workflow["name"]
 
 
@@ -30,7 +30,8 @@ def test_ensure_valid_version_yml(workflow_dir):
         versions_yml_file = workflow_dir / f"output/{software_name}/versions.yml"
         versions_yml = versions_yml_file.read_text()
     except FileNotFoundError:
-        if True: return # temp disable during development
+        if True:
+            return  # temp disable during development
         raise AssertionError(
             dedent(
                 f"""\
