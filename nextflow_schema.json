@@ -74,24 +74,27 @@
                 "stitching_channel": {
                     "type": "string",
                     "fa_icon": "fas fa-asterisk",
+                    "default": "all",
                     "description": "Name of the channel used for stitching, e.g. 'c1' or '1'. You can also specify 'all' to use all of the channels. Default: 'all'",
                     "help_text": ""
                 },
                 "flatfield_correction": {
                     "type": "boolean",
                     "fa_icon": "fas fa-cube",
-                    "description": "Apply flatfield correction before stitching? Default: true",
-                    "default": true
+                    "default": true,
+                    "description": "Apply flatfield correction before stitching? Default: true"
                 },
                 "axis_mapping": {
                     "type": "string",
                     "fa_icon": "fas fa-chart-line",
+                    "default": "-x,y,z",
                     "description": "Axis mapping for the objective->pixel coordinates conversion. Default: -x,y,z",
                     "help_text": "Comma-separated axis specification with optional flips."
                 },
                 "stitching_block_size": {
                     "type": "string",
                     "fa_icon": "fas fa-cube",
+                    "default": "128,128,64",
                     "pattern": "^\\d+,\\d+,\\d+$",
                     "description": "Block size to use when converting input data to n5 before stitching. Default: 128,128,64"
                 },
@@ -141,7 +144,7 @@
                     "help_text": "The total memory usage for stitching one acquisition will be workers * worker_cores * gb_per_core. "
                 },
                 "spark_driver_cores": {
-                    "type": "string",
+                    "type": "integer",
                     "fa_icon": "fas fa-microchip",
                     "description": "Number of cores allocated for the Spark driver. Default: 1"
                 },
