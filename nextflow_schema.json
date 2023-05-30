@@ -35,6 +35,130 @@
                 }
             }
         },
+        "data_options": {
+            "title": "Data Ingestion",
+            "type": "object",
+            "description": "Describe your input data that lives in the `input` directory",
+            "properties": {
+                "acq_names": {
+                    "type": "string",
+                    "fa_icon": "fas fa-vial",
+                    "description": "Names of acquisition rounds to process. These should match the names of the CZI/MVL files found in the data_dir.",
+                    "help_text": "e.g. LHA3_R3_small,LHA3_R5_small if you have files called LHA3_R3_small.czi and LHA3_R5_small.czi"
+                },
+                "channels": {
+                    "type": "string",
+                    "fa_icon": "fas fa-layer-group",
+                    "description": "List of channel names to process.",
+                    "help_text": "Channel names are specified in the format \"c[channel_number]\", where the channel_number is 0-indexed."
+                },
+                "czi_pattern": {
+                    "type": "string",
+                    "description": "A suffix pattern that is applied to acq_names when creating CZI names e.g. \"_V%02d\"",
+                    "fa_icon": "far fa-copy"
+                },
+                "resolution": {
+                    "type": "string",
+                    "fa_icon": "fas fa-file-image",
+                    "pattern": "^[\\.\\d]+,[\\.\\d]+,[\\.\\d]+$",
+                    "description": "Voxel resolution in all 3 dimensions. Default: 0.23,0.23,0.42",
+                    "help_text": "This is a comma-delimited tuple as x,y,z."
+                }
+            }
+        },
+        "stitching_options": {
+            "title": "Stitching",
+            "type": "object",
+            "description": "Stitching options",
+            "properties": {
+                "stitching_channel": {
+                    "type": "string",
+                    "fa_icon": "fas fa-asterisk",
+                    "description": "Name of the channel used for stitching, e.g. 'c1' or '1'. You can also specify 'all' to use all of the channels. Default: 'all'",
+                    "help_text": ""
+                },
+                "flatfield_correction": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-cube",
+                    "description": "Apply flatfield correction before stitching? Default: true",
+                    "default": true
+                },
+                "axis_mapping": {
+                    "type": "string",
+                    "fa_icon": "fas fa-chart-line",
+                    "description": "Axis mapping for the objective->pixel coordinates conversion. Default: -x,y,z",
+                    "help_text": "Comma-separated axis specification with optional flips."
+                },
+                "stitching_block_size": {
+                    "type": "string",
+                    "fa_icon": "fas fa-cube",
+                    "pattern": "^\\d+,\\d+,\\d+$",
+                    "description": "Block size to use when converting input data to n5 before stitching. Default: 128,128,64"
+                },
+                "final_block_size_xy": {
+                    "type": "integer",
+                    "fa_icon": "far fa-square",
+                    "description": "Block size (in Z dimension) when retiling after stitching. Default: 64",
+                    "help_text": "This must be smaller than the number of Z slices in the data."
+                },
+                "stitching_mode": {
+                    "type": "string",
+                    "fa_icon": "fas fa-braille",
+                    "description": "Rematching mode ('full' or 'incremental'). Default: incremental",
+                    "hidden": true
+                },
+                "stitching_padding": {
+                    "type": "string",
+                    "fa_icon": "fas fa-expand",
+                    "description": "Padding for the overlap regions. Default: 0,0,0"
+                },
+                "stitching_blur_sigma": {
+                    "type": "integer",
+                    "fa_icon": "fas fa-border-style",
+                    "description": "Sigma value of the gaussian blur pre-applied to the images before stitching. Default: 2"
+                },
+                "spark_cluster": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-cube",
+                    "description": "Use a distributed cluster to run Spark jobs? Default: false",
+                    "help": "By default, the Spark jobs will execute in a standalone Spark instance running as a single job. If you enable this option, a transient Spark cluster will be created on multiple nodes (controlled by the options below).",
+                    "default": false
+                },
+                "spark_workers": {
+                    "type": "integer",
+                    "fa_icon": "fas fa-cogs",
+                    "description": "Number of Spark workers to use for stitching one acquisition. Default: 4"
+                },
+                "spark_worker_cores": {
+                    "type": "integer",
+                    "fa_icon": "fas fa-microchip",
+                    "description": "Number of cores allocated to each Spark worker. Default: 4"
+                },
+                "spark_gb_per_core": {
+                    "type": "integer",
+                    "fa_icon": "fas fa-cog",
+                    "description": "Size of memory (in GB) that is allocated for each core of a Spark worker. Default: 4",
+                    "help_text": "The total memory usage for stitching one acquisition will be workers * worker_cores * gb_per_core. "
+                },
+                "spark_driver_cores": {
+                    "type": "string",
+                    "fa_icon": "fas fa-microchip",
+                    "description": "Number of cores allocated for the Spark driver. Default: 1"
+                },
+                "spark_driver_memory": {
+                    "type": "string",
+                    "fa_icon": "fas fa-memory",
+                    "description": "Amount of memory to allocate for the Spark driver. Default: 15g"
+                },
+                "stitching_app_container": {
+                    "type": "string",
+                    "fa_icon": "fas fa-box-open",
+                    "description": "Spark container for running the stitching tasks.",
+                    "hidden": true
+                }
+            },
+            "fa_icon": "far fa-map"
+        },
         "institutional_config_options": {
             "title": "Institutional config options",
             "type": "object",
@@ -200,6 +324,12 @@
     "allOf": [
         {
             "$ref": "#/definitions/input_output_options"
+        },
+        {
+            "$ref": "#/definitions/data_options"
+        },
+        {
+            "$ref": "#/definitions/stitching_options"
         },
         {
             "$ref": "#/definitions/institutional_config_options"

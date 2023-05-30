@@ -52,7 +52,7 @@ workflow LIGHTSHEETRECON {
         params.stitching_mode,
         params.stitching_padding,
         params.stitching_blur_sigma,
-        params.stitching_czi_pattern,
+        params.czi_pattern,
         params.flatfield_correction,
         params.spark_cluster,
         params.spark_workers as int,
