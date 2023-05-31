@@ -212,31 +212,6 @@ workflow STITCH {
         )
         ch_versions = ch_versions.mix(flatfield_done.versions)
     }
-    // // prepare retile args
-    // retile_args = prepare_app_args(
-    //     "retile",
-    //     flatfield_done.spark_context,
-    //     indexed_spark_work_dirs,
-    //     indexed_acq_data,
-    //     { acq_name, stitching_dir ->
-    //         def retile_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5', '.json')
-    //         return "${retile_args} --size 128"
-    //     }
-    // )
-    // retile_out = RETILE(
-    //     retile_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
-    //     stitching_app_container,
-    //     'org.janelia.stitching.ResaveAsSmallerTilesSpark',
-    //     retile_args.map { it[2] }, // app args
-    //     input_dir,
-    //     output_dir,
-    //     workers,
-    //     spark_worker_cores,
-    //     spark_gb_per_core,
-    //     driver_cores,
-    //     driver_memory
-    // )
-    // ch_versions = ch_versions.mix(RETILE.out.versions)
 
     // prepare stitching args
     stitching_args = prepare_app_args(
