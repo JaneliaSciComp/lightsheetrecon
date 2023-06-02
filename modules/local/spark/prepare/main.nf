@@ -13,7 +13,9 @@ process SPARK_PREPARE {
     when:
     task.ext.when == null || task.ext.when
 
-    shell:
+    script:
     cluster_work_fullpath = spark_work_dir.resolveSymLink().resolve(spark_work_dir_name).toString()
-    template 'prepare.sh'
+    """
+    /opt/scripts/prepare.sh "$spark_work_dir/$spark_work_dir_name"
+    """
 }

@@ -20,11 +20,13 @@ process SPARK_WAITFORWORKER {
     when:
     task.ext.when == null || task.ext.when
 
-    shell:
+    script:
     sleep_secs = task.ext.sleep_secs ?: '1'
     max_wait_secs = task.ext.max_wait_secs ?: '3600'
     spark_worker_log_file = get_spark_worker_log(cluster_work_dir, worker_id)
     terminate_file_name = get_terminate_file_name(cluster_work_dir)
     cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
-    template 'waitforworker.sh'
+    """
+    /opt/scripts/waitforworker.sh "$spark_uri" "$spark_worker_log_file" "$terminate_file_name" $sleep_secs $max_wait_secs
+    """
 }

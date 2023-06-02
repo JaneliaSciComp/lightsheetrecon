@@ -20,11 +20,13 @@ process SPARK_WAITFORMANAGER {
     when:
     task.ext.when == null || task.ext.when
 
-    shell:
+    script:
     sleep_secs = task.ext.sleep_secs ?: '1'
     max_wait_secs = task.ext.max_wait_secs ?: '3600'
     spark_master_log_name = get_spark_master_log(cluster_work_dir)
     terminate_file_name = get_terminate_file_name(cluster_work_dir)
     cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
-    template 'waitformanager.sh'
+    """
+    /opt/scripts/waitformanager.sh "$spark_master_log_name" "$terminate_file_name" $sleep_secs $max_wait_secs
+    """
 }

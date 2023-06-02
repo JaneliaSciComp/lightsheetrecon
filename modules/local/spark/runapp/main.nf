@@ -1,7 +1,3 @@
-include {
-    get_spark_config_filepath;
-} from '../utils'
-
 process SPARK_RUNAPP {
     container { spark_app_container }
     cpus { driver_cores == 0 ? 1 : driver_cores }
@@ -27,14 +23,21 @@ process SPARK_RUNAPP {
     when:
     task.ext.when == null || task.ext.when
 
-    shell:
+    script:
     args = task.ext.args ?: ''
     cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
-    spark_config_filepath = get_spark_config_filepath(cluster_work_fullpath)
     executor_memory_in_gb = worker_cores * mem_per_core_in_gb
     executor_memory = executor_memory_in_gb+"g"
     parallelism = workers * worker_cores
     driver_cores_sh = driver_cores ?: 1
     driver_memory_sh = driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
-    template 'runapp.sh'
+    app_jar_file = "/app/app.jar"
+    """
+    /opt/scripts/runapp.sh "$cluster_work_dir" "$spark_uri" "$app_jar_file" "$spark_app_main_class" "$spark_app_args" "$args" $parallelism $worker_cores "$executor_memory" $driver_cores_sh $driver_memory_sh
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        spark: \$(cat /opt/spark/VERSION)
+        $spark_app_main_class: \$(cat /app/VERSION)
+    END_VERSIONS
+    """
 }

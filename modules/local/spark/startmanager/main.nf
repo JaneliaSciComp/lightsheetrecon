@@ -18,7 +18,7 @@ process SPARK_STARTMANAGER {
     when:
     task.ext.when == null || task.ext.when
 
-    shell:
+    script:
     args = task.ext.args ?: ''
     sleep_secs = task.ext.sleep_secs ?: '1'
     spark_config_filepath = get_spark_config_filepath(cluster_work_dir)
@@ -26,5 +26,7 @@ process SPARK_STARTMANAGER {
     terminate_file_name = get_terminate_file_name(cluster_work_dir)
     container_engine = workflow.containerEngine
     cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
-    template 'startmanager.sh'
+    """
+    /opt/scripts/startmanager.sh "$spark_local_dir" "$cluster_work_dir" "$spark_master_log_file" "$spark_config_filepath" "$terminate_file_name" $sleep_secs $container_engine
+    """
 }

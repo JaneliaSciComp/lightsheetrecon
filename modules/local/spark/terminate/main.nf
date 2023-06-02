@@ -16,7 +16,6 @@ process SPARK_TERMINATE {
     cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
     terminate_file_name = get_terminate_file_name(cluster_work_dir)
     """
-    echo "DONE" > ${terminate_file_name}
-    cat ${terminate_file_name}
+    /opt/scripts/terminate.sh "$terminate_file_name"
     """
 }
