@@ -52,7 +52,7 @@
                     "description": "List of channel names to process.",
                     "help_text": "Channel names are specified in the format \"c[channel_number]\", where the channel_number is 0-indexed."
                 },
-                "czi_pattern": {
+                "stitching_czi_pattern": {
                     "type": "string",
                     "description": "A suffix pattern that is applied to acq_names when creating CZI names e.g. \"_V%02d\"",
                     "fa_icon": "far fa-copy"
@@ -152,12 +152,6 @@
                     "type": "string",
                     "fa_icon": "fas fa-memory",
                     "description": "Amount of memory to allocate for the Spark driver. Default: 15g"
-                },
-                "stitching_app_container": {
-                    "type": "string",
-                    "fa_icon": "fas fa-box-open",
-                    "description": "Spark container for running the stitching tasks.",
-                    "hidden": true
                 }
             },
             "fa_icon": "far fa-map"
