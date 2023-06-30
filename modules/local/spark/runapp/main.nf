@@ -17,7 +17,7 @@ process SPARK_RUNAPP {
     val(driver_memory)
 
     output:
-    tuple val(spark_uri), val(cluster_work_fullpath), emit: spark_context
+    tuple val(spark_uri), path(cluster_work_dir), emit: spark_context
     path "versions.yml", emit: versions
 
     when:
@@ -25,16 +25,19 @@ process SPARK_RUNAPP {
 
     script:
     args = task.ext.args ?: ''
-    cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
     executor_memory_in_gb = worker_cores * mem_per_core_in_gb
     executor_memory = executor_memory_in_gb+"g"
     parallelism = workers * worker_cores
     driver_cores_sh = driver_cores ?: 1
     driver_memory_sh = driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
-    app_jar_file = "/app/app.jar"
     container_engine = workflow.containerEngine
     """
-    /opt/scripts/runapp.sh "$cluster_work_dir" "$spark_uri" "$app_jar_file" "$spark_app_main_class" "$spark_app_args" "$args" $parallelism $worker_cores "$executor_memory" $driver_cores_sh $driver_memory_sh $container_engine
+    /opt/scripts/runapp.sh "$cluster_work_dir" "$spark_uri" \
+        /app/app.jar "$spark_app_main_class" \
+        "$spark_app_args" "$args" $parallelism \
+        $worker_cores "$executor_memory" $driver_cores_sh $driver_memory_sh \
+        $container_engine
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spark: \$(cat /opt/spark/VERSION)
