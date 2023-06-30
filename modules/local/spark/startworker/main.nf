@@ -33,6 +33,6 @@ process SPARK_STARTWORKER {
     terminate_file_name = get_terminate_file_name(cluster_work_dir)
     container_engine = workflow.containerEngine
     """
-    /opt/scripts/startworker.sh "$cluster_work_dir" "$spark_uri" $worker_id $worker_cores $worker_mem_in_gb "$spark_worker_log_file" "$spark_config_filepath" "$terminate_file_name" $sleep_secs $container_engine
+    /opt/scripts/startworker.sh "$cluster_work_dir" "$spark_uri" $worker_id $worker_cores $worker_mem_in_gb "$spark_worker_log_file" "$spark_config_filepath" "$terminate_file_name" "$args" $sleep_secs $container_engine
     """
 }

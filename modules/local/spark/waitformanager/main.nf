@@ -28,5 +28,6 @@ process SPARK_WAITFORMANAGER {
     cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
     """
     /opt/scripts/waitformanager.sh "$spark_master_log_name" "$terminate_file_name" $sleep_secs $max_wait_secs
+    export spark_uri=`cat spark_uri`
     """
 }

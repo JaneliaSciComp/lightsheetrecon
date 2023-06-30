@@ -32,8 +32,9 @@ process SPARK_RUNAPP {
     driver_cores_sh = driver_cores ?: 1
     driver_memory_sh = driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
     app_jar_file = "/app/app.jar"
+    container_engine = workflow.containerEngine
     """
-    /opt/scripts/runapp.sh "$cluster_work_dir" "$spark_uri" "$app_jar_file" "$spark_app_main_class" "$spark_app_args" "$args" $parallelism $worker_cores "$executor_memory" $driver_cores_sh $driver_memory_sh
+    /opt/scripts/runapp.sh "$cluster_work_dir" "$spark_uri" "$app_jar_file" "$spark_app_main_class" "$spark_app_args" "$args" $parallelism $worker_cores "$executor_memory" $driver_cores_sh $driver_memory_sh $container_engine
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spark: \$(cat /opt/spark/VERSION)

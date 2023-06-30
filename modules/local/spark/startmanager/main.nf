@@ -27,6 +27,6 @@ process SPARK_STARTMANAGER {
     container_engine = workflow.containerEngine
     cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
     """
-    /opt/scripts/startmanager.sh "$spark_local_dir" "$cluster_work_dir" "$spark_master_log_file" "$spark_config_filepath" "$terminate_file_name" $sleep_secs $container_engine
+    /opt/scripts/startmanager.sh "$spark_local_dir" "$cluster_work_dir" "$spark_master_log_file" "$spark_config_filepath" "$terminate_file_name" "$args" $sleep_secs $container_engine
     """
 }
