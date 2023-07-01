@@ -11,8 +11,12 @@ if (params.spark_workers > 1 && !params.spark_cluster) {
 }
 
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.outdir ]
+def checkPathParamList = [ params.input, params.indir, params.outdir ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+
+
+// Check mandatory parameters
+if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -20,7 +24,8 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { STITCH } from '../subworkflows/local/stitching/main'
+include { STITCH      } from '../subworkflows/local/stitching/main'
+include { INPUT_CHECK } from '../subworkflows/local/input_check'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -38,10 +43,18 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 
 workflow LIGHTSHEETRECON {
     ch_versions = Channel.empty()
-    ch_acq_names = Channel.fromList(params.acq_names.tokenize(','))
+
+    INPUT_CHECK (
+        params.indir,
+        ch_input
+    )
+    .acquisitions
+    .set { ch_acquisitions }
+    ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
+
     stitch_out = STITCH(
-        ch_acq_names,
-        params.input,
+        ch_acquisitions,
+        params.indir,
         params.outdir,
         params.channels?.split(','),
         params.resolution,
@@ -52,7 +65,6 @@ workflow LIGHTSHEETRECON {
         params.stitching_mode,
         params.stitching_padding,
         params.stitching_blur_sigma,
-        params.stitching_czi_pattern,
         params.flatfield_correction,
         params.spark_cluster,
         params.spark_workers as int,

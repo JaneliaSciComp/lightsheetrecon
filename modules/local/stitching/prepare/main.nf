@@ -3,23 +3,18 @@ process STITCHING_PREPARE {
     container 'multifish/biocontainers-spark:3.1.3'
 
     input:
+    tuple val(meta), val(files)
     path(input_dir)
     path(output_dir)
-    val(acq_name)
 
     output:
-    tuple val(acq_name), val(acq_stitching_output_dir)
+    tuple val(meta), val(files), emit: acquisitions
 
     script:
-    abs_input_dir = input_dir.resolveSymLink().toString()
     abs_output_dir = output_dir.resolveSymLink().toString()
-    acq_stitching_output_dir = "${abs_output_dir}/stitching/${acq_name}/"
-    mvl = "${abs_input_dir}/${acq_name}.mvl"
-    czi = "${abs_input_dir}/${acq_name}*.czi"
+    meta.stitching_dir = "${abs_output_dir}/stitching/${meta.id}/"
     """
     umask 0002
-    mkdir -p $acq_stitching_output_dir
-    ln -s $mvl $acq_stitching_output_dir || true
-    ln -s $czi $acq_stitching_output_dir || true
+    mkdir -p ${meta.stitching_dir}
     """
 }
