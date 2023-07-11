@@ -4,6 +4,8 @@ include { STITCHING_PREPARE   } from '../../../modules/local/stitching/prepare/m
 include { STITCHING_PARSECZI  } from '../../../modules/local/stitching/parseczi/main'
 include { STITCHING_CZI2N5    } from '../../../modules/local/stitching/czi2n5/main'
 include { STITCHING_FLATFIELD } from '../../../modules/local/stitching/flatfield/main'
+include { STITCHING_STITCH    } from '../../../modules/local/stitching/stitch/main'
+include { STITCHING_FUSE      } from '../../../modules/local/stitching/fuse/main'
 
 include {
     parse_stitching_channel;
@@ -91,32 +93,30 @@ workflow STITCH {
     .join(spark_cluster_res, by:1)
     .map {
         def (spark_work_dir, meta, files, spark_uri) = it
-        meta.spark_uri = spark_uri
-        log.debug "Assigned Spark cluster ${spark_uri} for {$meta.id}"
-        [meta, files]
+        def spark = [:]
+        spark.uri = spark_uri
+        spark.work_dir = spark_work_dir
+        spark.workers = workers ?: 1
+        spark.worker_cores = spark_worker_cores
+        spark.driver_cores = driver_cores ?: 1
+        spark.driver_memory = driver_memory
+        spark.parallelism = (workers * spark_worker_cores)
+        spark.executor_memory = (spark_worker_cores * spark_gb_per_core)+" GB"
+        log.debug "Assigned Spark context for {$meta.id}: "+spark
+        [meta, files, spark]
     }
 
     STITCHING_PARSECZI(
         prepare_out_meta,
         input_dir,
-        output_dir,
-        workers,
-        spark_worker_cores,
-        spark_gb_per_core,
-        driver_cores,
-        driver_memory
+        output_dir
     )
     ch_versions = ch_versions.mix(STITCHING_PARSECZI.out.versions)
 
     STITCHING_CZI2N5(
         STITCHING_PARSECZI.out.acquisitions,
         input_dir,
-        output_dir,
-        workers,
-        spark_worker_cores,
-        spark_gb_per_core,
-        driver_cores,
-        driver_memory
+        output_dir
     )
     ch_versions = ch_versions.mix(STITCHING_CZI2N5.out.versions)
 
@@ -125,124 +125,35 @@ workflow STITCH {
         flatfield_done = STITCHING_FLATFIELD(
             STITCHING_CZI2N5.out.acquisitions,
             input_dir,
-            output_dir,
-            workers,
-            spark_worker_cores,
-            spark_gb_per_core,
-            driver_cores,
-            driver_memory
+            output_dir
         )
         ch_versions = ch_versions.mix(flatfield_done.versions)
     }
 
-    // // prepare stitching args
-    // stitching_args = prepare_app_args(
-    //     "stitching",
-    //     flatfield_done.spark_context,
-    //     indexed_spark_work_dirs,
-    //     indexed_acq_data,
-    //     { acq_name, stitching_dir ->
-    //         def retiled_n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5', '.json')
-    //         def correction_args = entries_inputs_args(stitching_dir, channels, '--correction-images-paths', '-n5', '.json')
-    //         def channel = parse_stitching_channel(stitching_channel)
-    //         def ref_channel_arg = channel ? "-r ${channel}" : ''
-    //         return "--stitch ${ref_channel_arg} ${retiled_n5_channels_args} ${correction_args} --mode ${stitching_mode} --padding ${stitching_padding} --blurSigma ${stitching_blur_sigma}"
-    //     }
-    // )
-    // STITCHING(
-    //     flatfield_done.spark_context, // tuple: [spark_uri, spark_work_dir]
-    //     stitching_app_container,
-    //     'org.janelia.stitching.StitchingSpark',
-    //     stitching_args.map { it[2] }, // app args
-    //     input_dir,
-    //     output_dir,
-    //     workers,
-    //     spark_worker_cores,
-    //     spark_gb_per_core,
-    //     driver_cores,
-    //     driver_memory
-    // )
-    // ch_versions = ch_versions.mix(STITCHING.out.versions)
+    STITCHING_STITCH(
+        flatfield_done.acquisitions,
+        input_dir,
+        output_dir
+    )
+    ch_versions = ch_versions.mix(STITCHING_STITCH.out.versions)
 
-    // // prepare fuse args
-    // fuse_args = prepare_app_args(
-    //     "fuse",
-    //     STITCHING.out.spark_context,
-    //     indexed_spark_work_dirs,
-    //     indexed_acq_data,
-    //     { acq_name, stitching_dir ->
-    //         def stitched_n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5-final', '.json')
-    //         def correction_args = entries_inputs_args(stitching_dir, channels, '--correction-images-paths', '-n5', '.json')
-    //         return "--fuse ${stitched_n5_channels_args} ${correction_args} --blending --fill --n5BlockSize ${final_block_size_xy}"
-    //     }
-    // )
-    // FUSE(
-    //     FUSE.out.spark_context, // tuple: [spark_uri, spark_work_dir]
-    //     stitching_app_container,
-    //     'org.janelia.stitching.StitchingSpark',
-    //     fuse_args.map { it[2] }, // app args
-    //     input_dir,
-    //     output_dir,
-    //     workers,
-    //     spark_worker_cores,
-    //     spark_gb_per_core,
-    //     driver_cores,
-    //     driver_memory
-    // )
-    // ch_versions = ch_versions.mix(FUSE.out.versions)
+    STITCHING_FUSE(
+        STITCHING_STITCH.out.acquisitions,
+        input_dir,
+        output_dir
+    )
+    ch_versions = ch_versions.mix(STITCHING_FUSE.out.versions)
 
-    // // terminate stitching cluster
-    // if (spark_cluster) {
-    //     done = SPARK_TERMINATE(
-    //         FUSE.out.spark_context,
-    //     ) | join(indexed_spark_work_dirs, by:1) | map {
-    //         [ it[2], it[0] ]
-    //     } | join(indexed_acq_data) | map {
-    //         log.debug "Completed stitching for ${it}"
-    //         [ it[1], it[4] ] // spark_work_dir, stitching_dir
-    //     }
-    // }
-    // else {
-    //     // [index, spark_uri, acq, stitching_dir, spark_work_dir]
-    //     done = indexed_acq_data.map {
-    //         log.debug "Completed stitching for ${it}"
-    //         [ it[4], it[3] ] // spark_work_dir, stitching_dir
-    //     }
-    // }
-
-    done = Channel.empty()
+    // terminate stitching cluster
+    if (spark_cluster) {
+        done_cluster = STITCHING_FUSE.out.acquisitions.map { [it[2].uri, it[2].work_dir] }
+        done = SPARK_TERMINATE(done_cluster) | map { it[1] }
+    }
+    else {
+        done = STITCHING_FUSE.out.acquisitions.map { it[2].work_dir }
+    }
 
     emit:
     done
     versions = ch_versions
-}
-
-// Create the app arguments for a Spark App invocation
-// app_name: app name for logging purposes
-// spark_context: [ spark_uri, cluster_work_dir ]
-//
-//
-def prepare_app_args(app_name,
-                     spark_context,
-                     indexed_working_dirs,
-                     indexed_acq_data,
-                     app_args_closure) {
-    return spark_context | map {
-        // reverse the order in the tuple because the join key is the working dir
-        def r = [ it[2], it[0] ]
-        log.debug "Indexed result from: $it -> $r"
-        return r
-    } | join(indexed_acq_data) | map {
-        log.debug "Create ${app_name} inputs from ${it}"
-        def idx = it[0]
-        def spark_work_dir = it[1] // spark work dir comes from previous result
-        def acq_name = it[2]
-        def spark_uri = it[3]
-        def stitching_dir = it[4]
-        //log.debug "Get ${app_name} args using: (${acq_name}, ${stitching_dir})"
-        def app_args = app_args_closure.call(acq_name, stitching_dir)
-        def app_inputs = [ spark_uri, spark_work_dir, app_args ]
-        log.debug "${app_name} app input ${idx}: ${app_inputs}"
-        return app_inputs
-    }
 }

@@ -1,4 +1,4 @@
-process STITCHING_CZI2N5 {
+process STITCHING_FUSE {
     tag "${meta.id}"
     container 'multifish/biocontainers-stitching-spark:1.9.0'
     cpus { spark.driver_cores }
@@ -20,13 +20,17 @@ process STITCHING_CZI2N5 {
     extra_args = task.ext.args ?: ''
     executor_memory = spark.executor_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
     driver_memory = spark.driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
-    // Derive app arguments from the meta map
-    app_args = "-i ${meta.stitching_dir}/tiles.json"
     """
+    # Create command line parameters
+    declare -a app_args
+    for file in ${meta.stitching_dir}/*-n5-final.json
+    do
+        app_args+=( -i "\$file" )
+    done
     /opt/scripts/runapp.sh "${workflow.containerEngine}" "${spark.work_dir}" "${spark.uri}" \
-        /app/app.jar org.janelia.stitching.ConvertCZITilesToN5Spark \
+        /app/app.jar org.janelia.stitching.StitchingSpark \
         ${spark.parallelism} ${spark.worker_cores} "${executor_memory}" ${spark.driver_cores} "${driver_memory}" \
-        ${app_args} ${extra_args}
+        --fuse \${app_args[@]} ${extra_args}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

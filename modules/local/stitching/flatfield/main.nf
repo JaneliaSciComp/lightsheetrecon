@@ -1,20 +1,16 @@
 process STITCHING_FLATFIELD {
+    tag "${meta.id}"
     container 'multifish/biocontainers-stitching-spark:1.9.0'
-    cpus { driver_cores == 0 ? 1 : driver_cores }
-    memory { driver_memory }
+    cpus { spark.driver_cores }
+    memory { spark.driver_memory }
 
     input:
-    tuple val(meta), val(files)
+    tuple val(meta), val(files), val(spark)
     path(input_dir)
     path(output_dir)
-    val(workers)
-    val(worker_cores)
-    val(mem_per_core_in_gb)
-    val(driver_cores)
-    val(driver_memory)
 
     output:
-    tuple val(meta), val(files), emit: acquisitions
+    tuple val(meta), val(files), val(spark), emit: acquisitions
     path "versions.yml", emit: versions
 
     when:
@@ -22,23 +18,20 @@ process STITCHING_FLATFIELD {
 
     script:
     extra_args = task.ext.args ?: ''
-    executor_memory_in_gb = worker_cores * mem_per_core_in_gb
-    executor_memory = executor_memory_in_gb+"g"
-    parallelism = workers * worker_cores
-    driver_cores_sh = driver_cores ?: 1
-    driver_memory_sh = driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
-    container_engine = workflow.containerEngine
+    executor_memory = spark.executor_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
+    driver_memory = spark.driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
     """
     # Remove previous flatfield results because the process will fail if it exists
     rm -r ${meta.stitching_dir}/*flatfield
+    # Create command line parameters
     declare -a app_args
-    for file in ${meta.stitching_dir}/*n5.json
+    for file in ${meta.stitching_dir}/*-n5.json
     do
         app_args+=( -i "\$file" )
     done
-    /opt/scripts/runapp.sh "$container_engine" "$meta.spark_work_dir" "$meta.spark_uri" \
+    /opt/scripts/runapp.sh "$workflow.containerEngine" "$spark.work_dir" "$spark.uri" \
         /app/app.jar org.janelia.flatfield.FlatfieldCorrection \
-        $parallelism $worker_cores "$executor_memory" $driver_cores_sh $driver_memory_sh \
+        $spark.parallelism $spark.worker_cores "$executor_memory" $spark.driver_cores "$driver_memory" \
         \${app_args[@]} $extra_args
 
     cat <<-END_VERSIONS > versions.yml

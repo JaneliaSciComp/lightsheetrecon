@@ -1,4 +1,5 @@
 process STITCHING_PREPARE {
+    tag "${meta.id}"
     label 'process_single'
     container 'multifish/biocontainers-spark:3.1.3'
 
