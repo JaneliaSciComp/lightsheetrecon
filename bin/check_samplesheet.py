@@ -152,6 +152,22 @@ def check_samplesheet(file_in, file_out):
             except AssertionError as error:
                 logger.critical(f"{str(error)} On line {i + 2}.")
                 sys.exit(1)
+        # Validate metadata
+        id2czis = {}
+        id2pattern = {}
+        for row in checker.modified:
+            id = row['id']
+            if 'pattern' in row and row['pattern']:
+                id2pattern[id] = row['pattern']
+            if row['filename'].endswith(".czi"):
+                if id not in id2czis:
+                    id2czis[id] = []
+                id2czis[id].append(row['filename'])
+        for id in id2czis.keys():
+            if len(id2czis[id])>1 and (id not in id2pattern or not id2pattern[id]):
+                logger.critical(f"Acquisition '{id}' has more than one CZI file, so it needs to have at least one value in the 'pattern' column.")
+                sys.exit(1)
+
     header = list(reader.fieldnames)
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
     with file_out.open(mode="w", newline="") as out_handle:

@@ -32,8 +32,8 @@ workflow INPUT_CHECK {
         .map {
             // Set acquisition's filename pattern to the meta map
             def (meta, files, patterns) = it
-            meta.pattern = patterns.findAll { it?.trim() }
-            it
+            meta.pattern = patterns.findAll({ it?.trim() }).first()
+            [meta, files]
         }
         .set { acquisitions }
 
@@ -46,5 +46,5 @@ def create_acq_channel(LinkedHashMap samplesheet_row, imagedir) {
     def meta = [:]
     meta.id = samplesheet_row.id
     filepath = "${imagedir}/${samplesheet_row.filename}"
-    return [meta, file(filepath)]
+    return [meta, file(filepath), samplesheet_row.pattern]
 }

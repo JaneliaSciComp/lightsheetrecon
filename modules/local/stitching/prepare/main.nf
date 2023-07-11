@@ -12,9 +12,11 @@ process STITCHING_PREPARE {
 
     script:
     abs_output_dir = output_dir.resolveSymLink().toString()
-    meta.stitching_dir = "${abs_output_dir}/stitching/${meta.id}/"
+    meta.stitching_dir = "${abs_output_dir}/stitching/${meta.id}"
+    meta.spark_work_dir = "${abs_output_dir}/spark/${workflow.sessionId}/${meta.id}"
     """
     umask 0002
     mkdir -p ${meta.stitching_dir}
+    mkdir -p ${meta.spark_work_dir}
     """
 }

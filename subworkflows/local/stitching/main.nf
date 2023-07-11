@@ -1,18 +1,9 @@
-include { SPARK_START       } from '../../../subworkflows/local/spark/start/main'
-include { SPARK_TERMINATE   } from '../../../modules/local/spark/terminate/main'
-include { STITCHING_PREPARE } from '../../../modules/local/stitching/prepare/main'
-
-include {
-    STITCHING_PARSECZI;
-} from '../../../modules/local/stitching/parseczi/main'
-
-include {
-    SPARK_RUNAPP as CZI2N5;
-    SPARK_RUNAPP as FLATFIELD_CORRECTION;
-    SPARK_RUNAPP as RETILE;
-    SPARK_RUNAPP as STITCHING;
-    SPARK_RUNAPP as FUSE;
-} from '../../../modules/local/spark/runapp/main'
+include { SPARK_START         } from '../../../subworkflows/local/spark/start/main'
+include { SPARK_TERMINATE     } from '../../../modules/local/spark/terminate/main'
+include { STITCHING_PREPARE   } from '../../../modules/local/stitching/prepare/main'
+include { STITCHING_PARSECZI  } from '../../../modules/local/stitching/parseczi/main'
+include { STITCHING_CZI2N5    } from '../../../modules/local/stitching/czi2n5/main'
+include { STITCHING_FLATFIELD } from '../../../modules/local/stitching/flatfield/main'
 
 include {
     parse_stitching_channel;
@@ -51,141 +42,98 @@ workflow STITCH {
     ch_versions = Channel.empty()
     stitching_app_container = params.stitching_app_container
 
-    spark_work_dir = "${output_dir}/spark/${workflow.sessionId}"
-    if (!file(spark_work_dir).mkdirs()) {
-        error "Could not create Spark working dir at $spark_work_dir"
-    }
     // tuple: [acq_name, acq_stitching_output_dir]
-    STITCHING_PREPARE(
+    prepare_out = STITCHING_PREPARE(
         acquisitions,
         input_dir,
-        output_dir,
+        output_dir
     )
     // map: {acq_names:channel, stitching_dirs:channel, spark_work_dirs:channel}
-    STITCHING_PREPARE.out.acquisitions.subscribe {
-        meta = it[0]
-        filenames = it[1]
-        log.debug "Create stitching dir for ${meta.id}: ${meta.stitching_dir}"
+    prepare_out.acquisitions.subscribe {
+        log.debug "Create stitching dir for ${it[0].id}: ${it[0].stitching_dir}"
     }
 
-    // spark_local_dir = "/tmp/spark-${workflow.sessionId}"
+    spark_local_dir = "/tmp/spark-${workflow.sessionId}"
+    spark_work_dirs = prepare_out.acquisitions.map { it[0].spark_work_dir }
 
-    // def spark_cluster_res = acq_inputs.spark_work_dirs.map { [ 'local[*]', it ] }
-    // driver_cores = spark_driver_cores
-    // driver_memory = spark_driver_memory
-    // workers = spark_workers
-    // if (spark_cluster) {
-    //     spark_cluster_res = SPARK_START(
-    //         spark_local_dir,
-    //         acq_inputs.spark_work_dirs,
-    //         input_dir,
-    //         output_dir,
-    //         workers,
-    //         spark_worker_cores,
-    //         spark_gb_per_core
-    //     )
-    // }
-    // else {
-    //     // When running locally, the driver needs enough resources to run a spark worker
-    //     workers = 1
-    //     driver_cores = driver_cores + spark_worker_cores
-    //     driver_memory = (2 + spark_worker_cores * spark_gb_per_core) + " GB"
-    // }
-    // log.debug "Setting driver_cores: $driver_cores"
-    // log.debug "Setting driver_memory: $driver_memory"
+    // When running locally, the driver needs enough resources to run a spark worker
+    spark_cluster_res = spark_work_dirs.map { [ 'local[*]', it ] }
+    workers = 1
+    driver_cores = spark_driver_cores + spark_worker_cores
+    driver_memory = (2 + spark_worker_cores * spark_gb_per_core) + " GB"
 
-    // // print spark cluster result
-    // // channel: [ spark_uri, spark_work_dir ]
+    if (spark_cluster) {
+        workers = spark_workers
+        driver_cores = spark_driver_cores
+        driver_memory = spark_driver_memory
+        spark_cluster_res = SPARK_START(
+            spark_local_dir,
+            spark_work_dirs,
+            input_dir,
+            output_dir,
+            workers,
+            spark_worker_cores,
+            spark_gb_per_core
+        )
+    }
 
-    // def indexed_spark_uris = spark_cluster_res
-    //     .join(indexed_spark_work_dirs, by:1)
-    //     .map {
-    //         def indexed_uri = [ it[2], it[1] ]
-    //         log.debug "Create indexed spark URI from $it -> ${indexed_uri}"
-    //         return indexed_uri
-    //     }
+    log.debug "Setting workers: $workers"
+    log.debug "Setting driver_cores: $driver_cores"
+    log.debug "Setting driver_memory: $driver_memory"
 
-    // // TODO: get this from meta
-    // def stitching_czi_pattern = "TODO"
-    // // prepare parse czi tiles
-    // parseczi_args = prepare_app_args(
-    //     "parseczi",
-    //     indexed_spark_work_dirs, // to start the chain we just need a tuple that has the working dir as the 2nd element
-    //     indexed_spark_work_dirs,
-    //     indexed_acq_data,
-    //     { acq_name, stitching_dir ->
-    //         def mvl_inputs = entries_inputs_args(stitching_dir, [ acq_name ], '-i', '', '.mvl')
-    //         def czi_inputs = entries_inputs_args('', [ acq_name ], '-f', stitching_czi_pattern, '.czi')
-    //         return "${mvl_inputs} ${czi_inputs} -r ${resolution} -a ${axis_mapping} -b ${stitching_dir}"
-    //     }
-    // )
-    // parse_out = STITCHING_PARSECZI(
-    //     parseczi_args.map { it[0..1] }, // tuple: [spark_uri, spark_work_dir]
-    //     parseczi_args.map { it[2] }, // app args
-    //     input_dir,
-    //     output_dir,
-    //     workers,
-    //     spark_worker_cores,
-    //     spark_gb_per_core,
-    //     driver_cores,
-    //     driver_memory
-    // )
-    // ch_versions = ch_versions.mix(STITCHING_PARSECZI.out.versions)
+    // Rejoin Spark clusters to metas
+    // channel: [ meta, spark_work_dir, spark_uri ]
+    prepare_out_meta = prepare_out.acquisitions.map {
+        def (meta, files) = it
+        log.debug "Prepared $meta.id"
+        [meta, meta.spark_work_dir, files]
+    }
+    .join(spark_cluster_res, by:1)
+    .map {
+        def (spark_work_dir, meta, files, spark_uri) = it
+        meta.spark_uri = spark_uri
+        log.debug "Assigned Spark cluster ${spark_uri} for {$meta.id}"
+        [meta, files]
+    }
 
-    // // prepare czi to n5
-    // czi_to_n5_args = prepare_app_args(
-    //     "czi2n5",
-    //     STITCHING_PARSECZI.out.spark_context, // tuple: [spark_uri, spark_work_dir]
-    //     indexed_spark_work_dirs,
-    //     indexed_acq_data,
-    //     { acq_name, stitching_dir ->
-    //         def tiles_json = entries_inputs_args(stitching_dir, [ 'tiles' ], '-i', '', '.json')
-    //         return "${tiles_json} --blockSize ${stitching_block_size}"
-    //     }
-    // )
-    // CZI2N5(
-    //     parse_out.spark_context, // tuple: [spark_uri, spark_work_dir]
-    //     stitching_app_container,
-    //     'org.janelia.stitching.ConvertCZITilesToN5Spark',
-    //     czi_to_n5_args.map { it[2] }, // app args
-    //     input_dir,
-    //     output_dir,
-    //     spark_workers,
-    //     spark_worker_cores,
-    //     spark_gb_per_core,
-    //     driver_cores,
-    //     driver_memory
-    // )
-    // ch_versions = ch_versions.mix(CZI2N5.out.versions)
+    STITCHING_PARSECZI(
+        prepare_out_meta,
+        input_dir,
+        output_dir,
+        workers,
+        spark_worker_cores,
+        spark_gb_per_core,
+        driver_cores,
+        driver_memory
+    )
+    ch_versions = ch_versions.mix(STITCHING_PARSECZI.out.versions)
 
-    // flatfield_done = CZI2N5.out
-    // if (flatfield_correction) {
-    //     // prepare flatfield args
-    //     def flatfield_args = prepare_app_args(
-    //         "flatfield_correction",
-    //         CZI2N5.out.spark_context,
-    //         indexed_spark_work_dirs,
-    //         indexed_acq_data,
-    //         { acq_name, stitching_dir ->
-    //             def n5_channels_args = entries_inputs_args(stitching_dir, channels, '-i', '-n5', '.json')
-    //             return "${n5_channels_args} --2d --bins 256"
-    //         }
-    //     )
-    //     flatfield_done = FLATFIELD_CORRECTION(
-    //         CZI2N5.out.spark_context, // tuple: [spark_uri, spark_work_dir]
-    //         stitching_app_container,
-    //         'org.janelia.flatfield.FlatfieldCorrection',
-    //         flatfield_args.map { it[2] }, // app args
-    //         input_dir,
-    //         output_dir,
-    //         workers,
-    //         spark_worker_cores,
-    //         spark_gb_per_core,
-    //         driver_cores,
-    //         driver_memory
-    //     )
-    //     ch_versions = ch_versions.mix(flatfield_done.versions)
-    // }
+    STITCHING_CZI2N5(
+        STITCHING_PARSECZI.out.acquisitions,
+        input_dir,
+        output_dir,
+        workers,
+        spark_worker_cores,
+        spark_gb_per_core,
+        driver_cores,
+        driver_memory
+    )
+    ch_versions = ch_versions.mix(STITCHING_CZI2N5.out.versions)
+
+    flatfield_done = STITCHING_CZI2N5.out
+    if (flatfield_correction) {
+        flatfield_done = STITCHING_FLATFIELD(
+            STITCHING_CZI2N5.out.acquisitions,
+            input_dir,
+            output_dir,
+            workers,
+            spark_worker_cores,
+            spark_gb_per_core,
+            driver_cores,
+            driver_memory
+        )
+        ch_versions = ch_versions.mix(flatfield_done.versions)
+    }
 
     // // prepare stitching args
     // stitching_args = prepare_app_args(

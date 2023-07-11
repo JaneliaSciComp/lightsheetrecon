@@ -1,4 +1,4 @@
-process STITCHING_PARSECZI {
+process STITCHING_FLATFIELD {
     container 'multifish/biocontainers-stitching-spark:1.9.0'
     cpus { driver_cores == 0 ? 1 : driver_cores }
     memory { driver_memory }
@@ -28,20 +28,18 @@ process STITCHING_PARSECZI {
     driver_cores_sh = driver_cores ?: 1
     driver_memory_sh = driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
     container_engine = workflow.containerEngine
-    // Find the MVL metadata file
-    mvl = files.findAll { it.extension=="mvl" }.first()
-    // Get the CZI filename pattern
-    pattern = meta.pattern
-    // If there is no pattern, it must be a single CZI file
-    if (pattern==null || pattern=='') {
-        czis = files.findAll { it.extension=="czi" }
-        pattern = czis.first()
-    }
     """
+    # Remove previous flatfield results because the process will fail if it exists
+    rm -r ${meta.stitching_dir}/*flatfield
+    declare -a app_args
+    for file in ${meta.stitching_dir}/*n5.json
+    do
+        app_args+=( -i "\$file" )
+    done
     /opt/scripts/runapp.sh "$container_engine" "$meta.spark_work_dir" "$meta.spark_uri" \
-        /app/app.jar org.janelia.stitching.ParseCZITilesMetadata \
-        $parallelism $worker_cores "$executor_memory" $driver_cores_sh "$driver_memory_sh" \
-        -i ${mvl} -b ${input_dir} -f ${pattern} -o ${meta.stitching_dir} ${extra_args}
+        /app/app.jar org.janelia.flatfield.FlatfieldCorrection \
+        $parallelism $worker_cores "$executor_memory" $driver_cores_sh $driver_memory_sh \
+        \${app_args[@]} $extra_args
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
