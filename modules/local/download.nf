@@ -1,6 +1,6 @@
 process DOWNLOAD {
     tag "${samplesheet_row.filename}"
-    container "public.ecr.aws/janeliascicomp/multifish/downloader:1.1.0"
+    container "janeliascicomp/multifish/downloader:1.1.0"
 
     input:
     path download_dir
