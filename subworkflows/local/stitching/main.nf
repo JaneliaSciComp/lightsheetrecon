@@ -37,7 +37,6 @@ workflow STITCH {
 
     main:
     ch_versions = Channel.empty()
-    stitching_app_container = params.stitching_app_container
 
     // tuple: [acq_name, acq_stitching_output_dir]
     prepare_out = STITCHING_PREPARE(
