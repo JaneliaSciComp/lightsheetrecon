@@ -17,6 +17,7 @@
 - [Apache Spark](https://spark.apache.org/)
 
 - [stitching-spark](https://github.com/saalfeldlab/stitching-spark)
+
   > Andrews, S. (2010). FastQC: A Quality Control Tool for High Throughput Sequence Data [Online]. Available online https://www.bioinformatics.babraham.ac.uk/projects/fastqc/.
 
 - [MultiQC](https://pubmed.ncbi.nlm.nih.gov/27312411/)
