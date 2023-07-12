@@ -7,11 +7,6 @@ include { STITCHING_FLATFIELD } from '../../../modules/local/stitching/flatfield
 include { STITCHING_STITCH    } from '../../../modules/local/stitching/stitch/main'
 include { STITCHING_FUSE      } from '../../../modules/local/stitching/fuse/main'
 
-include {
-    parse_stitching_channel;
-    entries_inputs_args;
-} from './utils'
-
 /**
  * prepares the work and output directories and invoke stitching
  * for the aquisitions list - this is a value channel containing a list of acquistins
