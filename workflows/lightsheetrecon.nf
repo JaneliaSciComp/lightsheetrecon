@@ -16,7 +16,7 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 
 
 // Check mandatory parameters
-if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
+if (params.input) { samplesheet_file = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
 
 include { paramsSummaryLog; paramsSummaryMap } from 'plugin/nf-validation'
 
@@ -47,8 +47,16 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { INPUT_CHECK         } from '../subworkflows/local/input_check'
+include { SPARK_START         } from '../subworkflows/local/spark/start/main'
+include { SPARK_TERMINATE     } from '../modules/local/spark/terminate/main'
+include { STITCHING_PREPARE   } from '../modules/local/stitching/prepare/main'
+include { STITCHING_PARSECZI  } from '../modules/local/stitching/parseczi/main'
+include { STITCHING_CZI2N5    } from '../modules/local/stitching/czi2n5/main'
+include { STITCHING_FLATFIELD } from '../modules/local/stitching/flatfield/main'
+include { STITCHING_STITCH    } from '../modules/local/stitching/stitch/main'
+include { STITCHING_FUSE      } from '../modules/local/stitching/fuse/main'
 include { STITCH      } from '../subworkflows/local/stitching/main'
-include { INPUT_CHECK } from '../subworkflows/local/input_check'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,29 +78,31 @@ workflow LIGHTSHEETRECON {
 
     INPUT_CHECK (
         params.indir,
-        ch_input
+        samplesheet_file
     )
     .acquisitions
+    .map {
+        def (meta, files) = it
+        // set output subdirectories for each acquisition
+        meta.spark_work_dir = "${params.outdir}/spark/${workflow.sessionId}/${meta.id}"
+        meta.stitching_dir = "${params.outdir}/stitching/${meta.id}"
+        dirs = [params.indir, params.outdir]
+        [meta, dirs+files]
+    }
     .set { ch_acquisitions }
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
     // TODO: OPTIONAL, you can use nf-validation plugin to create an input channel from the samplesheet with Channel.fromSamplesheet("input")
     // See the documentation https://nextflow-io.github.io/nf-validation/samplesheets/fromSamplesheet/
     // ! There is currently no tooling to help you write a sample sheet schema
 
-    stitch_out = STITCH(
-        ch_acquisitions,
+    STITCHING_PREPARE(
+        ch_acquisitions
+    )
+
+    spark_context = STITCH(
+        STITCHING_PREPARE.out,
         params.indir,
         params.outdir,
-        params.channels?.split(','),
-        params.resolution,
-        params.axis_mapping,
-        params.stitching_block_size,
-        params.final_block_size_xy,
-        params.stitching_channel,
-        params.stitching_mode,
-        params.stitching_padding,
-        params.stitching_blur_sigma,
-        params.flatfield_correction,
         params.spark_cluster,
         params.spark_workers as int,
         params.spark_worker_cores as int,
@@ -100,9 +110,35 @@ workflow LIGHTSHEETRECON {
         params.spark_driver_cores as int,
         params.spark_driver_memory
     )
-    ch_versions = ch_versions.mix(STITCH.out.versions)
 
-    stitch_out.done.subscribe { log.debug "STITCH result: $it" }
+    STITCHING_PARSECZI(STITCH.out)
+    ch_versions = ch_versions.mix(STITCHING_PARSECZI.out.versions)
+
+    STITCHING_CZI2N5(STITCHING_PARSECZI.out.acquisitions)
+    ch_versions = ch_versions.mix(STITCHING_CZI2N5.out.versions)
+
+    flatfield_done = STITCHING_CZI2N5.out
+    if (params.flatfield_correction) {
+        flatfield_done = STITCHING_FLATFIELD(
+            STITCHING_CZI2N5.out.acquisitions
+        )
+        ch_versions = ch_versions.mix(flatfield_done.versions)
+    }
+
+    STITCHING_STITCH(flatfield_done.acquisitions)
+    ch_versions = ch_versions.mix(STITCHING_STITCH.out.versions)
+
+    STITCHING_FUSE(STITCHING_STITCH.out.acquisitions)
+    ch_versions = ch_versions.mix(STITCHING_FUSE.out.versions)
+
+    // terminate stitching cluster
+    if (params.spark_cluster) {
+        done_cluster = STITCHING_FUSE.out.acquisitions.map { [it[2].uri, it[2].work_dir] }
+        done = SPARK_TERMINATE(done_cluster) | map { it[1] }
+    }
+    else {
+        done = STITCHING_FUSE.out.acquisitions.map { it[2].work_dir }
+    }
 
     //
     // MODULE: Pipeline reporting

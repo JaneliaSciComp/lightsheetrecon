@@ -5,12 +5,10 @@ process STITCHING_CZI2N5 {
     memory { spark.driver_memory }
 
     input:
-    tuple val(meta), val(files), val(spark)
-    path(input_dir)
-    path(output_dir)
+    tuple val(meta), path(files), val(spark)
 
     output:
-    tuple val(meta), val(files), val(spark), emit: acquisitions
+    tuple val(meta), path(files), val(spark), emit: acquisitions
     path "versions.yml", emit: versions
 
     when:
@@ -20,7 +18,6 @@ process STITCHING_CZI2N5 {
     extra_args = task.ext.args ?: ''
     executor_memory = spark.executor_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
     driver_memory = spark.driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
-    // Derive app arguments from the meta map
     app_args = "-i ${meta.stitching_dir}/tiles.json"
     """
     /opt/scripts/runapp.sh "${workflow.containerEngine}" "${spark.work_dir}" "${spark.uri}" \

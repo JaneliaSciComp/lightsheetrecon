@@ -5,12 +5,10 @@ process STITCHING_FLATFIELD {
     memory { spark.driver_memory }
 
     input:
-    tuple val(meta), val(files), val(spark)
-    path(input_dir)
-    path(output_dir)
+    tuple val(meta), path(files), val(spark)
 
     output:
-    tuple val(meta), val(files), val(spark), emit: acquisitions
+    tuple val(meta), path(files), val(spark), emit: acquisitions
     path "versions.yml", emit: versions
 
     when:
@@ -22,17 +20,17 @@ process STITCHING_FLATFIELD {
     driver_memory = spark.driver_memory.replace(" KB",'k').replace(" MB",'m').replace(" GB",'g').replace(" TB",'t')
     """
     # Remove previous flatfield results because the process will fail if it exists
-    rm -r ${meta.stitching_dir}/*flatfield
+    rm -r ${meta.stitching_dir}/*flatfield || true
     # Create command line parameters
     declare -a app_args
     for file in ${meta.stitching_dir}/*-n5.json
     do
         app_args+=( -i "\$file" )
     done
-    /opt/scripts/runapp.sh "$workflow.containerEngine" "$spark.work_dir" "$spark.uri" \
+    /opt/scripts/runapp.sh "${workflow.containerEngine}" "${spark.work_dir}" "${spark.uri}" \
         /app/app.jar org.janelia.flatfield.FlatfieldCorrection \
-        $spark.parallelism $spark.worker_cores "$executor_memory" $spark.driver_cores "$driver_memory" \
-        \${app_args[@]} $extra_args
+        ${spark.parallelism} ${spark.worker_cores} "${executor_memory}" ${spark.driver_cores} "${driver_memory}" \
+        \${app_args[@]} ${extra_args}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

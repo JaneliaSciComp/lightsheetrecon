@@ -6,13 +6,11 @@ include {
 
 process SPARK_STARTWORKER {
     container 'multifish/biocontainers-spark:3.1.3'
-    // scratch { spark_local_dir }
     cpus { worker_cores }
     // 1 GB of overhead for Spark, the rest for executors
     memory "${worker_mem_in_gb+1} GB"
 
     input:
-    val(spark_local_dir)
     tuple val(spark_uri), path(cluster_work_dir), val(worker_id)
     path(input_dir)
     path(output_dir)

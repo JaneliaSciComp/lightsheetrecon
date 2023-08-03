@@ -7,7 +7,7 @@ include { DOWNLOAD } from '../../modules/local/download'
 
 workflow INPUT_CHECK {
     take:
-    imagedir
+    image_dir
     samplesheet // file: /path/to/samplesheet.csv
 
     main:
@@ -23,16 +23,18 @@ workflow INPUT_CHECK {
     }
     .set { tiles }
 
-    DOWNLOAD(imagedir, tiles.remote)
+    DOWNLOAD(image_dir, tiles.remote)
         .tiles
         .mix(tiles.local)
-        .map { create_acq_channel(it, imagedir) }
+        .map { create_acq_channel(it, image_dir) }
         // Group by acquisition
         .groupTuple()
         .map {
-            // Set acquisition's filename pattern to the meta map
             def (meta, files, patterns) = it
+            // Set acquisition's filename pattern to the meta map
             meta.pattern = patterns.findAll({ it?.trim() }).first()
+            // Set image dir to the meta map
+            meta.image_dir = image_dir
             [meta, files]
         }
         .set { acquisitions }
@@ -42,9 +44,9 @@ workflow INPUT_CHECK {
     versions = SAMPLESHEET_CHECK.out.versions // channel: [ versions.yml ]
 }
 
-def create_acq_channel(LinkedHashMap samplesheet_row, imagedir) {
+def create_acq_channel(LinkedHashMap samplesheet_row, image_dir) {
     def meta = [:]
     meta.id = samplesheet_row.id
-    filepath = "${imagedir}/${samplesheet_row.filename}"
+    filepath = "${image_dir}/${samplesheet_row.filename}"
     return [meta, file(filepath), samplesheet_row.pattern]
 }

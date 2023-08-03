@@ -5,12 +5,10 @@ process STITCHING_STITCH {
     memory { spark.driver_memory }
 
     input:
-    tuple val(meta), val(files), val(spark)
-    path(input_dir)
-    path(output_dir)
+    tuple val(meta), path(files), val(spark)
 
     output:
-    tuple val(meta), val(files), val(spark), emit: acquisitions
+    tuple val(meta), path(files), val(spark), emit: acquisitions
     path "versions.yml", emit: versions
 
     when:

@@ -5,12 +5,10 @@ process STITCHING_PARSECZI {
     memory { spark.driver_memory }
 
     input:
-    tuple val(meta), val(files), val(spark)
-    path(input_dir)
-    path(output_dir)
+    tuple val(meta), path(files), val(spark)
 
     output:
-    tuple val(meta), val(files), val(spark), emit: acquisitions
+    tuple val(meta), path(files), val(spark), emit: acquisitions
     path "versions.yml", emit: versions
 
     when:
@@ -33,7 +31,7 @@ process STITCHING_PARSECZI {
     /opt/scripts/runapp.sh "$workflow.containerEngine" "$spark.work_dir" "$spark.uri" \
         /app/app.jar org.janelia.stitching.ParseCZITilesMetadata \
         $spark.parallelism $spark.worker_cores "$executor_memory" $spark.driver_cores "$driver_memory" \
-        -i ${mvl} -b ${input_dir} -f ${pattern} -o ${meta.stitching_dir} ${extra_args}
+        -i ${mvl} -b ${meta.image_dir} -f ${pattern} -o ${meta.stitching_dir} ${extra_args}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
