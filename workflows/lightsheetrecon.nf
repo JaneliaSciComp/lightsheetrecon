@@ -49,14 +49,13 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 
 include { INPUT_CHECK         } from '../subworkflows/local/input_check'
 include { SPARK_START         } from '../subworkflows/local/spark/start/main'
-include { SPARK_TERMINATE     } from '../modules/local/spark/terminate/main'
+include { SPARK_STOP          } from '../subworkflows/local/spark/stop/main'
 include { STITCHING_PREPARE   } from '../modules/local/stitching/prepare/main'
 include { STITCHING_PARSECZI  } from '../modules/local/stitching/parseczi/main'
 include { STITCHING_CZI2N5    } from '../modules/local/stitching/czi2n5/main'
 include { STITCHING_FLATFIELD } from '../modules/local/stitching/flatfield/main'
 include { STITCHING_STITCH    } from '../modules/local/stitching/stitch/main'
 include { STITCHING_FUSE      } from '../modules/local/stitching/fuse/main'
-include { STITCH      } from '../subworkflows/local/stitching/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,7 +98,7 @@ workflow LIGHTSHEETRECON {
         ch_acquisitions
     )
 
-    spark_context = STITCH(
+    spark_context = SPARK_START(
         STITCHING_PREPARE.out,
         params.indir,
         params.outdir,
@@ -111,7 +110,7 @@ workflow LIGHTSHEETRECON {
         params.spark_driver_memory
     )
 
-    STITCHING_PARSECZI(STITCH.out)
+    STITCHING_PARSECZI(SPARK_START.out)
     ch_versions = ch_versions.mix(STITCHING_PARSECZI.out.versions)
 
     STITCHING_CZI2N5(STITCHING_PARSECZI.out.acquisitions)
@@ -131,14 +130,7 @@ workflow LIGHTSHEETRECON {
     STITCHING_FUSE(STITCHING_STITCH.out.acquisitions)
     ch_versions = ch_versions.mix(STITCHING_FUSE.out.versions)
 
-    // terminate stitching cluster
-    if (params.spark_cluster) {
-        done_cluster = STITCHING_FUSE.out.acquisitions.map { [it[2].uri, it[2].work_dir] }
-        done = SPARK_TERMINATE(done_cluster) | map { it[1] }
-    }
-    else {
-        done = STITCHING_FUSE.out.acquisitions.map { it[2].work_dir }
-    }
+    done = SPARK_STOP(STITCHING_FUSE.out.acquisitions)
 
     //
     // MODULE: Pipeline reporting
