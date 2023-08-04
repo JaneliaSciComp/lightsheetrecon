@@ -10,6 +10,12 @@ if (params.spark_workers > 1 && !params.spark_cluster) {
     System.exit(1)
 }
 
+// Create input data directory if we need to
+def indir_d = new File(params.indir)
+if (!indir_d.exists()) {
+    indir_d.mkdirs()
+}
+
 // Check input path parameters to see if they exist
 def checkPathParamList = [ params.input, params.indir, params.outdir ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
