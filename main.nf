@@ -41,24 +41,10 @@ WorkflowMain.initialise(workflow, params, log)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { LIGHTSHEETRECON } from './workflows/lightsheetrecon'
+include { NFCORE_LIGHTSHEETRECON } from './workflows/lightsheetrecon'
 
 //
 // WORKFLOW: Run main nf-core/lightsheetrecon analysis pipeline
-//
-workflow NFCORE_LIGHTSHEETRECON {
-    LIGHTSHEETRECON ()
-}
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN ALL WORKFLOWS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-//
-// WORKFLOW: Execute a single named workflow for the pipeline
-// See: https://github.com/nf-core/rnaseq/issues/619
 //
 workflow {
     NFCORE_LIGHTSHEETRECON ()

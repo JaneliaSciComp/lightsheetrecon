@@ -72,7 +72,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoft
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow LIGHTSHEETRECON {
+workflow NFCORE_LIGHTSHEETRECON {
     ch_versions = Channel.empty()
 
     INPUT_CHECK (
