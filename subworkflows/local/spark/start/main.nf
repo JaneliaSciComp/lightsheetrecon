@@ -10,8 +10,7 @@ include { SPARK_CLUSTER } from '../cluster/main'
 workflow SPARK_START {
     take:
     meta_tuples           // channel: [ val(meta), [ files ] ]
-    input_dir             // path: /path/to/input mounted to the Spark workers
-    output_dir            // path: /path/to/output mounted to the Spark workers
+    data_dir              // path: [ /path/to/input mounted to the Spark workers ]
     spark_cluster         // boolean: start a distributed cluster?
     spark_workers         // int: number of workers in the cluster (ignored if spark_cluster is false)
     spark_worker_cores    // int: number of cores per worker
@@ -29,8 +28,7 @@ workflow SPARK_START {
         driver_memory = spark_driver_memory
         spark_cluster_res = SPARK_CLUSTER(
             spark_work_dirs,
-            input_dir,
-            output_dir,
+            data_dir,
             workers,
             spark_worker_cores,
             spark_gb_per_core

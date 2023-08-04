@@ -12,8 +12,7 @@ process SPARK_STARTWORKER {
 
     input:
     tuple val(spark_uri), path(cluster_work_dir), val(worker_id)
-    path(input_dir)
-    path(output_dir)
+    path(data_dir)
     val(worker_cores)
     val(worker_mem_in_gb)
 

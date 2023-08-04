@@ -11,8 +11,7 @@ include { SPARK_WAITFORWORKER } from '../../../../modules/local/spark/waitforwor
 workflow SPARK_CLUSTER {
     take:
     spark_work_dir      // channel: [ val(spark_work_dir) ]
-    input_dir           // path: /path/to/input mounted to the Spark workers
-    output_dir          // path: /path/to/output mounted to the Spark workers
+    data_dir            // path: [ /path/to/input mounted to the Spark workers ]
     spark_workers       // int: number of workers in the cluster
     spark_worker_cores  // int: number of cores per worker
     spark_gb_per_core   // int: number of GB of memory per worker core
@@ -48,8 +47,7 @@ workflow SPARK_CLUSTER {
     // these run indefinitely until SPARK_TERMINATE is called
     SPARK_STARTWORKER(
         workers_with_work_dirs,
-        input_dir,
-        output_dir,
+        data_dir,
         spark_worker_cores,
         spark_worker_cores * spark_gb_per_core,
     )

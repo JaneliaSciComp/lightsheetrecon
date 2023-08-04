@@ -106,8 +106,7 @@ workflow NFCORE_LIGHTSHEETRECON {
 
     spark_context = SPARK_START(
         STITCHING_PREPARE.out,
-        params.indir,
-        params.outdir,
+        [params.indir, params.outdir],
         params.spark_cluster,
         params.spark_workers as int,
         params.spark_worker_cores as int,
