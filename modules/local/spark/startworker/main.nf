@@ -5,7 +5,7 @@ include {
 } from '../utils'
 
 process SPARK_STARTWORKER {
-    container 'multifish/biocontainers-spark:3.1.3'
+    container 'docker.io/multifish/biocontainers-spark:3.1.3'
     cpus { worker_cores }
     // 1 GB of overhead for Spark, the rest for executors
     memory "${worker_mem_in_gb+1} GB"

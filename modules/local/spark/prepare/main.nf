@@ -1,6 +1,6 @@
 process SPARK_PREPARE {
     label 'process_single'
-    container 'multifish/biocontainers-spark:3.1.3'
+    container 'docker.io/multifish/biocontainers-spark:3.1.3'
 
     input:
     // The parent spark dir and the dir name are passed separately so that parent

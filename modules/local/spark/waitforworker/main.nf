@@ -5,7 +5,7 @@ include {
 
 process SPARK_WAITFORWORKER {
     label 'process_single'
-    container 'multifish/biocontainers-spark:3.1.3'
+    container 'docker.io/multifish/biocontainers-spark:3.1.3'
     errorStrategy { task.exitStatus == 2
         ? 'retry' // retry on a timeout to prevent the case when the waiter is started before the worker and the worker never gets its chance
         : 'terminate' }

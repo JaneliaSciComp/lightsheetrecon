@@ -1,7 +1,7 @@
 process DOWNLOAD {
     tag "${samplesheet_row.filename}"
     label 'process_single'
-    container "multifish/downloader:1.1.0"
+    container "docker.io/multifish/downloader:1.1.0"
 
     input:
     path download_dir

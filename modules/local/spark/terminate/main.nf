@@ -4,7 +4,7 @@ include {
 
 process SPARK_TERMINATE {
     label 'process_single'
-    container 'multifish/biocontainers-spark:3.1.3'
+    container 'docker.io/multifish/biocontainers-spark:3.1.3'
 
     input:
     tuple val(spark_uri), path(cluster_work_dir)

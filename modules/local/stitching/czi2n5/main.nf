@@ -1,6 +1,6 @@
 process STITCHING_CZI2N5 {
     tag "${meta.id}"
-    container 'multifish/biocontainers-stitching-spark:1.9.0'
+    container 'docker.io/multifish/biocontainers-stitching-spark:1.9.0'
     cpus { spark.driver_cores }
     memory { spark.driver_memory }
 
