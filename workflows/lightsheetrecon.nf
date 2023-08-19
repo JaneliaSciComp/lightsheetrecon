@@ -91,6 +91,7 @@ workflow NFCORE_LIGHTSHEETRECON {
         // set output subdirectories for each acquisition
         meta.spark_work_dir = "${params.outdir}/spark/${workflow.sessionId}/${meta.id}"
         meta.stitching_dir = "${params.outdir}/stitching/${meta.id}"
+        // Add top level dirs here so that they get mounted into the Spark processes
         dirs = [params.indir, params.outdir]
         [meta, dirs+files]
     }
@@ -104,7 +105,7 @@ workflow NFCORE_LIGHTSHEETRECON {
         ch_acquisitions
     )
 
-    spark_context = SPARK_START(
+    SPARK_START(
         STITCHING_PREPARE.out,
         [params.indir, params.outdir],
         params.spark_cluster,
