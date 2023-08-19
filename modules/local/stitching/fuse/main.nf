@@ -36,4 +36,17 @@ process STITCHING_FUSE {
         stitching-spark: \$(cat /app/VERSION)
     END_VERSIONS
     """
+
+    stub:
+    """
+    # Create final output
+    mkdir -p ${meta.stitching_dir}/export.n5
+    echo "{\"n5\":\"2.2.0\"}" > ${meta.stitching_dir}/export.n5/attributes.json
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        spark: \$(cat /opt/spark/VERSION)
+        stitching-spark: \$(cat /app/VERSION)
+    END_VERSIONS
+    """
 }

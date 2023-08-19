@@ -38,4 +38,21 @@ process STITCHING_FLATFIELD {
         stitching-spark: \$(cat /app/VERSION)
     END_VERSIONS
     """
+
+    stub:
+    """
+    # Verify the input exists
+    test -f ${meta.stitching_dir}/c0-n5.json
+    test -f ${meta.stitching_dir}/c1-n5.json
+
+    # Create the output flatfield for each channel
+    mkdir -p ${meta.stitching_dir}/c0-flatfield
+    mkdir -p ${meta.stitching_dir}/c1-flatfield
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        spark: \$(cat /opt/spark/VERSION)
+        stitching-spark: \$(cat /app/VERSION)
+    END_VERSIONS
+    """
 }

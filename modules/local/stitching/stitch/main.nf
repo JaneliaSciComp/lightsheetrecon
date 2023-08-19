@@ -36,4 +36,20 @@ process STITCHING_STITCH {
         stitching-spark: \$(cat /app/VERSION)
     END_VERSIONS
     """
+
+    stub:
+    """
+    # Create the final output metadata file for each channel
+    touch ${meta.stitching_dir}/c0-n5-final.json
+    touch ${meta.stitching_dir}/c1-n5-final.json
+
+    # Create optimizer output
+    touch ${meta.stitching_dir}/optimizer-final.txt
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        spark: \$(cat /opt/spark/VERSION)
+        stitching-spark: \$(cat /app/VERSION)
+    END_VERSIONS
+    """
 }
