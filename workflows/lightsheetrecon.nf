@@ -6,8 +6,7 @@
 
 // Validate input parameters
 if (params.spark_workers > 1 && !params.spark_cluster) {
-    log.error "You must enable --spark_cluster if --spark_workers is greater than 1."
-    System.exit(1)
+    exit 1, "You must enable --spark_cluster if --spark_workers is greater than 1."
 }
 
 // Create input data directory if we need to

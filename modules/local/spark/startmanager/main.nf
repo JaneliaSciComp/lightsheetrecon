@@ -5,8 +5,8 @@ include {
 } from '../utils'
 
 process SPARK_STARTMANAGER {
-    container 'multifish/biocontainers-spark:3.1.3'
     label 'process_single'
+    container 'multifish/biocontainers-spark:3.1.3'
 
     input:
     path(cluster_work_dir)
