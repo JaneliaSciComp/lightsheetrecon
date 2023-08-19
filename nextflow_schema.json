@@ -83,7 +83,7 @@
                 "flatfield_correction": {
                     "type": "boolean",
                     "fa_icon": "fas fa-cube",
-                    "default": true,
+                    "default": false,
                     "description": "Apply flatfield correction before stitching? Default: true"
                 },
                 "axis_mapping": {
