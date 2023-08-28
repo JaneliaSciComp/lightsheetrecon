@@ -12,20 +12,17 @@
 
 ## Introduction
 
-**nf-core/lightsheetrecon** is a bioinformatics pipeline that ...
+**nf-core/lightsheetrecon** is a bioimage analysis pipeline that reconstructs large microscopy image volumes. It ingests raw images in CZI format from Zeiss Lightsheet microscopes (more input formats to come in the future), computes flatfield correction and tile stitching, and outputs a multi-resolution image pyramid in N5 format. In the future this pipeline will also support deconvolution and other image processing methods.
 
-<!-- TODO nf-core:
-   Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
-   major pipeline sections and the types of output it produces. You're giving an overview to someone new
-   to nf-core here, in 15-20 seconds. For an example, see https://github.com/nf-core/rnaseq/blob/master/README.md#introduction
--->
+![nf-core/rnaseq metro map](docs/images/nf-core-lightsheetrecon_metro_map.png)
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
-<!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
-
-1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
+1. Spin up a Spark cluster (if configured)
+2. Read image metadata from MVL metadata file ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/stitching/ParseCZITilesMetadata.java))
+3. Convert the CZI images to N5 format ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/stitching/ConvertCZITilesToN5Spark.java))
+4. Compute flatfield correction ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/flatfield/FlatfieldCorrection.java))
+5. Compute stitching ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/stitching/PipelineStitchingStepExecutor.java))
+6. Fuse files and export to N5 ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/stitching/PipelineFusionStepExecutor.java))
+7. Stop Spark cluster (if configured)
 
 ## Usage
 
