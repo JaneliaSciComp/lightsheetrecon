@@ -2,10 +2,7 @@
 work/
 data/
 results/
-output/
-null/
 .DS_Store
 testing/
 testing*
 *.pyc
-.env*
