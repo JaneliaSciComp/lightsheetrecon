@@ -47,6 +47,11 @@ class WorkflowMain {
         if (!params.input) {
             Nextflow.error("Please provide an input samplesheet to the pipeline e.g. '--input samplesheet.csv'")
         }
+
+        // Check outdir has been provided
+        if (!params.outdir) {
+            Nextflow.error("Please provide an outdir to the pipeline e.g. '--outdir ./output'")
+        }
     }
     //
     // Get attribute from genome config file e.g. fasta

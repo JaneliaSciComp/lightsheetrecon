@@ -9,14 +9,34 @@ if (params.spark_workers > 1 && !params.spark_cluster) {
     exit 1, "You must enable --spark_cluster if --spark_workers is greater than 1."
 }
 
+// Default indir if it was not specified
+def indir = params.indir
+if (!indir) {
+    indir = params.outdir + "/input"
+    log.info "Setting default indir to: "+indir
+}
+
 // Create input data directory if we need to
-def indir_d = new File(params.indir)
+def indir_d = new File(indir)
 if (!indir_d.exists()) {
     indir_d.mkdirs()
 }
 
+// Make indir absolute
+indir = indir_d.toPath().toAbsolutePath().normalize().toString()
+log.info "Using absolute path for indir: "+indir
+
+def outdir_d = new File(params.outdir)
+if (!outdir_d.exists()) {
+    exit 1, "The path specified by --outdir does not exist: "+params.outdir
+}
+
+// Make outdir absolute
+outdir = outdir_d.toPath().toAbsolutePath().normalize().toString()
+log.info "Using absolute path for outdir: "+outdir
+
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.indir, params.outdir ]
+def checkPathParamList = [ params.input, indir, outdir ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 
@@ -81,17 +101,17 @@ workflow NFCORE_LIGHTSHEETRECON {
     ch_versions = Channel.empty()
 
     INPUT_CHECK (
-        params.indir,
+        indir,
         samplesheet_file
     )
     .acquisitions
     .map {
         def (meta, files) = it
         // set output subdirectories for each acquisition
-        meta.spark_work_dir = "${params.outdir}/spark/${workflow.sessionId}/${meta.id}"
-        meta.stitching_dir = "${params.outdir}/stitching/${meta.id}"
+        meta.spark_work_dir = "${outdir}/spark/${workflow.sessionId}/${meta.id}"
+        meta.stitching_dir = "${outdir}/stitching/${meta.id}"
         // Add top level dirs here so that they get mounted into the Spark processes
-        dirs = [params.indir, params.outdir]
+        dirs = [indir, outdir]
         [meta, dirs+files]
     }
     .set { ch_acquisitions }
@@ -106,7 +126,7 @@ workflow NFCORE_LIGHTSHEETRECON {
 
     SPARK_START(
         STITCHING_PREPARE.out,
-        [params.indir, params.outdir],
+        [indir, outdir],
         params.spark_cluster,
         params.spark_workers as int,
         params.spark_worker_cores as int,

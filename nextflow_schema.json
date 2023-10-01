@@ -10,7 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["input", "indir", "outdir"],
+            "required": ["input", "outdir"],
             "properties": {
                 "input": {
                     "type": "string",
@@ -25,7 +25,7 @@
                 "indir": {
                     "type": "string",
                     "format": "directory-path",
-                    "description": "The directory where the input images are located (or where they will be cached once they are downloaded).",
+                    "description": "The directory where the input images are located (or where they will be cached once they are downloaded). If undefined, it defaults to <outdir>/input",
                     "fa_icon": "fas fa-folder-open"
                 },
                 "outdir": {
@@ -154,6 +154,11 @@
                     "type": "string",
                     "fa_icon": "fas fa-memory",
                     "description": "Amount of memory to allocate for the Spark driver. Default: 15g"
+                },
+                "spark_local_dir": {
+                    "type": "string",
+                    "fa_icon": "fas fa-folder-open",
+                    "description": "Temporary local folder for Spark processing. Must exist on all cluster nodes. Default: /tmp/spark-${workflow.sessionId}"
                 }
             },
             "fa_icon": "far fa-map"
