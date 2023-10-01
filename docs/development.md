@@ -27,3 +27,13 @@ Run the automated test like this:
 ```bash
 PROFILE=singularity nextflow run ./tests/subworkflows/local/spark/cluster/main.nf -entry test_spark_cluster -c ./tests/config/nextflow.config
 ```
+
+## Before pushing
+
+Run these tools before pushing:
+
+```bash
+nf-core lint
+prettier -w .
+black .
+```
