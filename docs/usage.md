@@ -58,13 +58,13 @@ LHA3_R5_tiny,LHA3_R5_tiny.mvl,,7300eaacaa089f8e6303a872a484e715,https://janelia.
 
 ### Overview: Samplesheet Columns
 
-| Column    | Description               |
-| --------- | ------------------------- |
-| `id`  | Identifier which groups files together into acquisitions |
-| `filename` | Name of file in the folder specified by the `--indir` parameter |
-| `pattern` | Filename pattern for the acquisition round. It only needs to be specified for one row associated with the acquisition. |
-| `checksum` | Checksum to verify if `uri` is specified |
-| `uri` | URI where the file can be downloaded if it is not already in the `indir` |
+| Column     | Description                                                                                                            |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `id`       | Identifier which groups files together into acquisitions                                                               |
+| `filename` | Name of file in the folder specified by the `--indir` parameter                                                        |
+| `pattern`  | Filename pattern for the acquisition round. It only needs to be specified for one row associated with the acquisition. |
+| `checksum` | Checksum to verify if `uri` is specified                                                                               |
+| `uri`      | URI where the file can be downloaded if it is not already in the `indir`                                               |
 
 An [example samplesheet](../assets/samplesheet.csv) has been provided with the pipeline.
 
@@ -197,11 +197,11 @@ This pipeline is intended for large image data and as such needs careful memory 
 
 If you specify `--spark_cluster=true`, a transient Spark cluster will be created before running Spark jobs. The cluster size is controlled by the following parameters:
 
-| Parameter | Description |
-| --------- | ----------- |
-| `--spark_workers` | Number of distributed worker processes |
-| `--spark_worker_cores` | Number of cores per worker process |
-| `--spark_gb_per_core` | Amount of memory (in GB) to allocate per worker core |
+| Parameter              | Description                                          |
+| ---------------------- | ---------------------------------------------------- |
+| `--spark_workers`      | Number of distributed worker processes               |
+| `--spark_worker_cores` | Number of cores per worker process                   |
+| `--spark_gb_per_core`  | Amount of memory (in GB) to allocate per worker core |
 
 The cluster's total memory size can be calculated as `spark_workers * spark_worker_cores * spark_gb_per_core` and should be adjusted based on the total data input size and hardware availability.
 
