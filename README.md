@@ -12,17 +12,17 @@
 
 ## Introduction
 
-**nf-core/lightsheetrecon** is a bioimage analysis pipeline that reconstructs large microscopy image volumes. It ingests raw images in CZI format from Zeiss Lightsheet microscopes (more input formats to come in the future), computes flatfield correction and tile stitching, and outputs a multi-resolution image pyramid in N5 format. In the future this pipeline will also support deconvolution and other image processing methods.
+**nf-core/lightsheetrecon** is a bioimage analysis pipeline that reconstructs large microscopy image volumes. It ingests raw images in CZI format from Zeiss Lightsheet microscopes, computes flatfield correction and tile stitching, and outputs a multi-resolution image pyramid in N5 format. In the future this pipeline will support additional input formats as well as deconvolution and other image processing methods.
 
 ![nf-core/rnaseq metro map](docs/images/nf-core-lightsheetrecon_metro_map.png)
 
-1. Spin up a Spark cluster (if configured)
+1. Spin up a Spark cluster if configured
 2. Read image metadata from MVL metadata file ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/stitching/ParseCZITilesMetadata.java))
 3. Convert the CZI images to N5 format ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/stitching/ConvertCZITilesToN5Spark.java))
 4. Compute flatfield correction ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/flatfield/FlatfieldCorrection.java))
 5. Compute stitching ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/stitching/PipelineStitchingStepExecutor.java))
 6. Fuse files and export to N5 ([stitching-spark](https://github.com/saalfeldlab/stitching-spark/blob/master/src/main/java/org/janelia/stitching/PipelineFusionStepExecutor.java))
-7. Stop Spark cluster (if configured)
+7. Stop Spark cluster if configured
 
 ## Usage
 
@@ -31,25 +31,21 @@
 > to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline)
 > with `-profile test` before running the workflow on actual data.
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
-
 First, prepare a samplesheet with your input data that looks as follows:
 
 `samplesheet.csv`:
 
 ```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
+id,filename,pattern
+LHA3_R3_tiny,LHA3_R3_small.czi,LHA3_R3_small.czi
+LHA3_R3_tiny,LHA3_R3_tiny.mvl,
+LHA3_R5_tiny,LHA3_R5_small.czi,LHA3_R5_small.czi
+LHA3_R5_tiny,LHA3_R5_tiny.mvl,
 ```
 
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
-
--->
+Each row represents a file in the input data set. The identifier (`id`) groups files together into acquisition rounds. In the example above, each acquisition is a single CZI file containing all of the tiles and channels, and an MVL file containing the acquisition metadata (e.g. stage coordinates for each tile.)
 
 Now, you can run the pipeline using:
-
-<!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
 
 ```bash
 nextflow run nf-core/lightsheetrecon \
@@ -73,11 +69,13 @@ For more details about the output files and reports, please refer to the
 
 ## Credits
 
-nf-core/lightsheetrecon was originally written by Konrad Rokicki.
+The [stitching-spark tools](https://github.com/saalfeldlab/stitching-spark) used in this pipeline were developed by the [Saalfeld Lab](https://www.janelia.org/lab/saalfeld-lab) at Janelia Research Campus.
 
-We thank the following people for their extensive assistance in the development of this pipeline:
+The modules for running Spark clusters on Nextflow were originally prototyped by [Cristian Goina](https://github.com/cgoina).
 
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
+The nf-core/lightsheetrecon pipeline was originally constructed by [Konrad Rokicki](https://github.com/krokicki).
+
+The workflow diagram is based on the SVG source from the [cutandrun](https://github.com/nf-core/cutandrun/) pipeline.
 
 ## Contributions and Support
 
@@ -91,6 +89,13 @@ For further information or help, don't hesitate to get in touch on the [Slack `#
 <!-- If you use  nf-core/lightsheetrecon for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
 
 <!-- TODO nf-core: Add bibliography of tools and data used in your pipeline -->
+
+If you use `nf-core/lightsheetrecon` for your analysis, please cite the EASI-FISH article as follows:
+
+> Yuhan Wang, Mark Eddison, Greg Fleishman, Martin Weigert, Shengjin Xu, Fredrick E. Henry, Tim Wang, Andrew L. Lemire, Uwe Schmidt, Hui Yang,
+> Konrad Rokicki, Cristian Goina, Karel Svoboda, Eugene W. Myers, Stephan Saalfeld, Wyatt Korff, Scott M. Sternson, Paul W. Tillberg.
+> Expansion-Assisted Iterative-FISH defines lateral hypothalamus spatio-molecular organization. Cell. 2021 Dec 22;184(26):6361-6377.e24.
+> doi: [10.1016/j.cell.2021.11.024](https://doi.org/10.1016/j.cell.2021.11.024). PubMed PMID: 34875226.
 
 An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
 

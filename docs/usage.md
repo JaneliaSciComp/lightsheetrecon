@@ -6,49 +6,65 @@
 
 ## Introduction
 
-<!-- TODO nf-core: Add documentation about anything specific to running your pipeline. For general topics, please point to (and add to) the main nf-core website. -->
+**nf-core/lightsheetrecon** is a workflow for microscopy image reconstruction designed primarily for Zeiss Lightsheet microscope data.
 
 ## Samplesheet input
 
-You will need to create a samplesheet with information about the samples you would like to analyse before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row as shown in the examples below.
+You will need to create a samplesheet with information about the samples you would like to analyze before running the pipeline. Use the `--input` parameter to specify its location. It should be a comma-separated file with at least 3 columns, and a header row as shown in the examples below.
 
-```bash
---input '[path to samplesheet file]'
+`samplesheet.csv`:
+
+```csv
+id,filename,pattern
+LHA3_R3_tiny,LHA3_R3_small.czi,LHA3_R3_small.czi
+LHA3_R3_tiny,LHA3_R3_tiny.mvl,
+LHA3_R5_tiny,LHA3_R5_small.czi,LHA3_R5_small.czi
+LHA3_R5_tiny,LHA3_R5_tiny.mvl,
 ```
 
-### Multiple runs of the same sample
+Each row represents a file in the input data set. The `filename` refers to a file in the folder provided by the `--indir` parameter.
 
-The `sample` identifiers have to be the same when you have re-sequenced the same sample more than once e.g. to increase sequencing depth. The pipeline will concatenate the raw reads before performing any downstream analysis. Below is an example for the same sample sequenced across 3 lanes:
+The identifier (`id`) groups files together into acquisition rounds. In the example above there are two acquisition rounds: R3 and R5. Each acquisition round has an associated file name pattern (`pattern`) which describes all of the image files that belong to that acquisition. In the example above, each acquisition is contained in a single CZI file containing all of the tiles and channels. Each round also has an associated MVL file containing the acquisition metadata (e.g. stage coordinates for each tile.)
 
-```console
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L003_R1_001.fastq.gz,AEG588A1_S1_L003_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L004_R1_001.fastq.gz,AEG588A1_S1_L004_R2_001.fastq.gz
+If you have multiple image files per acquisition, you can use the file pattern to describe them:
+
+`samplesheet.csv`:
+
+```csv
+id,filename,pattern
+LHA3_R3_tiny,LHA3_R3_tiny_V01.czi,LHA3_R3_tiny_V%02d.czi
+LHA3_R3_tiny,LHA3_R3_tiny_V02.czi,
+LHA3_R3_tiny,LHA3_R3_tiny.mvl,
+LHA3_R5_tiny,LHA3_R5_tiny_V01.czi,LHA3_R5_tiny_V%02d.czi
+LHA3_R5_tiny,LHA3_R5_tiny_V02.czi,
+LHA3_R5_tiny,LHA3_R5_tiny.mvl,
 ```
+
+For each tile (i.e. `<Data>`) in the MVL file, the stitcher looks for corresponding CZI file with the file name pattern. In the example above, the pattern `LHA3_R3_tiny_V%02d.czi` is used by the stitcher by replacing the variable `%02d` with incremental channel numbers, formatted with a leading zero.
 
 ### Full samplesheet
 
-The pipeline will auto-detect whether a sample is single- or paired-end using the information provided in the samplesheet. The samplesheet can have as many columns as you desire, however, there is a strict requirement for the first 3 columns to match those defined in the table below.
-
-A final samplesheet file consisting of both single- and paired-end data may look something like the one below. This is for 6 samples, where `TREATMENT_REP3` has been sequenced twice.
+Additional samplesheet columns (`checksum` and `uri`) are supported for downloading files in cases where the data is remote. The files are downloaded to the `indir` at the start of the pipeline, and the files checksum is verified against `checksum`. If the file already exists in the `indir` folder, it is verified using the checksum and not downloaded again.
 
 ```console
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP2,AEG588A2_S2_L002_R1_001.fastq.gz,AEG588A2_S2_L002_R2_001.fastq.gz
-CONTROL_REP3,AEG588A3_S3_L002_R1_001.fastq.gz,AEG588A3_S3_L002_R2_001.fastq.gz
-TREATMENT_REP1,AEG588A4_S4_L003_R1_001.fastq.gz,
-TREATMENT_REP2,AEG588A5_S5_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L004_R1_001.fastq.gz,
+id,filename,pattern,checksum,uri
+LHA3_R3_tiny,LHA3_R3_tiny_V01.czi,LHA3_R3_tiny_V%02d.czi,26395350a2e33937321cd6a61b345454,https://janelia.figshare.com/ndownloader/files/30900664
+LHA3_R3_tiny,LHA3_R3_tiny_V02.czi,,7373d9c07e69e33f16f166430757c408,https://janelia.figshare.com/ndownloader/files/30900676
+LHA3_R3_tiny,LHA3_R3_tiny.mvl,,3b799dab4cc816b81c74652ebd7e63a3,https://janelia.figshare.com/ndownloader/files/30900679
+LHA3_R5_tiny,LHA3_R5_tiny_V01.czi,LHA3_R5_tiny_V%02d.czi,9688f2cdec1c7d3d1228b3240a2a9502,https://janelia.figshare.com/ndownloader/files/30900766
+LHA3_R5_tiny,LHA3_R5_tiny_V02.czi,,9a8de1ebca387dfbeb265e9fbb8ab435,https://janelia.figshare.com/ndownloader/files/30900781
+LHA3_R5_tiny,LHA3_R5_tiny.mvl,,7300eaacaa089f8e6303a872a484e715,https://janelia.figshare.com/ndownloader/files/30900778
 ```
 
-| Column    | Description                                                                                                                                                                            |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sample`  | Custom sample name. This entry will be identical for multiple sequencing libraries/runs from the same sample. Spaces in sample names are automatically converted to underscores (`_`). |
-| `fastq_1` | Full path to FastQ file for Illumina short reads 1. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
-| `fastq_2` | Full path to FastQ file for Illumina short reads 2. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
+### Overview: Samplesheet Columns
+
+| Column    | Description               |
+| --------- | ------------------------- |
+| `id`  | Identifier which groups files together into acquisitions |
+| `filename` | Name of file in the folder specified by the `--indir` parameter |
+| `pattern` | Filename pattern for the acquisition round. It only needs to be specified for one row associated with the acquisition. |
+| `checksum` | Checksum to verify if `uri` is specified |
+| `uri` | URI where the file can be downloaded if it is not already in the `indir` |
 
 An [example samplesheet](../assets/samplesheet.csv) has been provided with the pipeline.
 
@@ -57,7 +73,7 @@ An [example samplesheet](../assets/samplesheet.csv) has been provided with the p
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run nf-core/lightsheetrecon --input ./samplesheet.csv --outdir ./results --genome GRCh37 -profile docker
+nextflow run nf-core/lightsheetrecon --input ./assets/samplesheet.csv --outdir ./output --spark_cluster=true --spark_workers=2 --spark_worker_cores=4 --spark_gb_per_core=15
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -157,6 +173,8 @@ Specify this when restarting a pipeline. Nextflow will use cached results from a
 
 You can also supply a run name to resume a specific run: `-resume [run-name]`. Use the `nextflow log` command to show previous run names.
 
+Note that running with `--spark_cluster=true` may break the `-resume`` functionality.
+
 ### `-c`
 
 Specify the path to a specific config file (this is a core Nextflow command). See the [nf-core website documentation](https://nf-co.re/usage/configuration) for more information.
@@ -165,9 +183,23 @@ Specify the path to a specific config file (this is a core Nextflow command). Se
 
 ### Resource requests
 
-Whilst the default requirements set within the pipeline will hopefully work for most people and with most input data, you may find that you want to customise the compute resources that the pipeline requests. Each step in the pipeline has a default set of requirements for number of CPUs, memory and time. For most of the steps in the pipeline, if the job exits with any of the error codes specified [here](https://github.com/nf-core/rnaseq/blob/4c27ef5610c87db00c3c5a3eed10b1d161abf575/conf/base.config#L18) it will automatically be resubmitted with higher requests (2 x original, then 3 x original). If it still fails after the third attempt then the pipeline execution is stopped.
+This pipeline is intended for large image data and as such needs careful memory customization for each input data set. For stitching, you must specify if the Spark jobs should run locally or on a transient cluster as explained below. To change the resource requests for non-Spark jobs, please see the [max resources](https://nf-co.re/docs/usage/configuration#max-resources) and [tuning workflow resources](https://nf-co.re/docs/usage/configuration#tuning-workflow-resources) section of the nf-core website.
 
-To change the resource requests, please see the [max resources](https://nf-co.re/docs/usage/configuration#max-resources) and [tuning workflow resources](https://nf-co.re/docs/usage/configuration#tuning-workflow-resources) section of the nf-core website.
+#### Spark Cluster
+
+If you specify `--spark_cluster=true`, a transient Spark cluster will be created before running Spark jobs. The cluster size is controlled by the following parameters:
+
+| Parameter | Description |
+| --------- | ----------- |
+| `--spark_workers` | Number of distributed worker processes |
+| `--spark_worker_cores` | Number of cores per worker process |
+| `--spark_gb_per_core` | Amount of memory (in GB) to allocate per worker core |
+
+The cluster's total memory size can be calculated as `spark_workers * spark_worker_cores * spark_gb_per_core` and should be adjusted based on the total data input size and hardware availability.
+
+#### Spark Local
+
+If you don't specify `--spark_cluster=true`, or specify `--spark_cluster=false`, then the Spark jobs will run locally. You can still control the memory limits using the same parameters, except that `--spark_workers` will be capped at 1. Since the driver process must now act as a worker, its limits are automatically adjusted. The number of cores for the driver is calculated at `spark_driver_cores + spark_worker_cores` and the amount of memory for the driver (in GB) is calculated using `2 + spark_worker_cores * spark_gb_per_core` with 2 GB of overhead. In this case, the `spark_driver_memory` parameter is ignored.
 
 ### Custom Containers
 
@@ -179,11 +211,11 @@ To use a different container from the default container or conda environment spe
 
 A pipeline might not always support every possible argument or option of a particular tool used in pipeline. Fortunately, nf-core pipelines provide some freedom to users to insert additional parameters that the pipeline does not include by default.
 
-To learn how to provide additional arguments to a particular tool of the pipeline, please see the [customising tool arguments](https://nf-co.re/docs/usage/configuration#customising-tool-arguments) section of the nf-core website.
+To learn how to provide additional arguments to a particular tool of the pipeline, please see the [customizing tool arguments](https://nf-co.re/docs/usage/configuration#customising-tool-arguments) section of the nf-core website.
 
 ### nf-core/configs
 
-In most cases, you will only need to create a custom config as a one-off but if you and others within your organisation are likely to be running nf-core pipelines regularly and need to use the same settings regularly it may be a good idea to request that your custom config file is uploaded to the `nf-core/configs` git repository. Before you do this please can you test that the config file works with your pipeline of choice using the `-c` parameter. You can then create a pull request to the `nf-core/configs` repository with the addition of your config file, associated documentation file (see examples in [`nf-core/configs/docs`](https://github.com/nf-core/configs/tree/master/docs)), and amending [`nfcore_custom.config`](https://github.com/nf-core/configs/blob/master/nfcore_custom.config) to include your custom profile.
+In most cases, you will only need to create a custom config as a one-off but if you and others within your organization are likely to be running nf-core pipelines regularly and need to use the same settings regularly it may be a good idea to request that your custom config file is uploaded to the `nf-core/configs` git repository. Before you do this please can you test that the config file works with your pipeline of choice using the `-c` parameter. You can then create a pull request to the `nf-core/configs` repository with the addition of your config file, associated documentation file (see examples in [`nf-core/configs/docs`](https://github.com/nf-core/configs/tree/master/docs)), and amending [`nfcore_custom.config`](https://github.com/nf-core/configs/blob/master/nfcore_custom.config) to include your custom profile.
 
 See the main [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for more information about creating your own configuration files.
 

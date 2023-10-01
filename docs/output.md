@@ -2,40 +2,35 @@
 
 ## Introduction
 
-This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
-
-The directories listed below will be created in the results directory after the pipeline has finished. All paths are relative to the top-level results directory.
-
-<!-- TODO nf-core: Write this documentation describing your workflow's output -->
+This document describes the output produced by the pipeline. The directories listed below will be created in the results directory after the pipeline has finished. All paths are relative to the top-level results directory.
 
 ## Pipeline overview
 
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
-- [FastQC](#fastqc) - Raw read QC
+- [stitching-spark](#stitching-spark) - Large microscopy image reconstruction
 - [MultiQC](#multiqc) - Aggregate report describing results and QC from the whole pipeline
 - [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
 
-### FastQC
+### stitching-spark
 
 <details markdown="1">
 <summary>Output files</summary>
 
-- `fastqc/`
-  - `*_fastqc.html`: FastQC report containing quality metrics.
-  - `*_fastqc.zip`: Zip archive containing the FastQC report, tab-delimited data file and plot images.
+- `<acquisition id>/stitching/`
+  - `tiles.json`: multi-view metadata about the acquisition converted from the MVL file
+  - `tiles.n5`: imagery converted from CZI to n5 format tiled according to --stitching_block_size
+  - `c<channel>-n5.json`: metadata about each channel in tiles.n5
+  - `c<channel>-flatfield`: files for flatfield-correction including the calculated brightfield and offset
+  - `c<channel>-n5-retiled.json`: metadata after retiling
+  - `retiled-images`: retiled images
+  - `optimizer-final.txt`: stitching log
+  - `c<channel>-n5-retiled-final.json`: metadata output of stitching
+  - `export.n5`: final stitched result, tiled according to --retile_z_size
 
 </details>
 
-[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your sequenced reads. It provides information about the quality score distribution across your reads, per base sequence content (%A/T/G/C), adapter contamination and overrepresented sequences. For further reading and documentation see the [FastQC help pages](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
-
-![MultiQC - FastQC sequence counts plot](images/mqc_fastqc_counts.png)
-
-![MultiQC - FastQC mean quality scores plot](images/mqc_fastqc_quality.png)
-
-![MultiQC - FastQC adapter content plot](images/mqc_fastqc_adapter.png)
-
-> **NB:** The FastQC plots displayed in the MultiQC report shows _untrimmed_ reads. They may contain adapter sequence and potentially regions with low quality.
+[stitching-spark](https://github.com/saalfeldlab/stitching-spark) reconstructs large microscopy images from overlapping image tiles. Based on the Stitching plugin for Fiji.
 
 ### MultiQC
 
