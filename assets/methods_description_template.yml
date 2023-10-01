@@ -13,7 +13,7 @@ data: |
   <p>${tool_citations}</p>
   <h4>References</h4>
   <ul>
-<li>Wang Y, Eddison M, Fleishman G, Weigert M, Xu S, Wang T, Rokicki K, Goina C, Henry FE, Lemire AL, Schmidt U, Yang H, Svoboda K, Myers EW, Saalfeld S, Korff W, Sternson SM, Tillberg PW. EASI-FISH for thick tissue defines lateral hypothalamus spatio-molecular organization. Cell. 2021 Dec 22;184(26):6361-6377.e24. doi: <a href="https://doi.org/10.1016/j.cell.2021.11.024">10.1016/j.cell.2021.11.024</a>
+    <li>Wang Y, Eddison M, Fleishman G, Weigert M, Xu S, Wang T, Rokicki K, Goina C, Henry FE, Lemire AL, Schmidt U, Yang H, Svoboda K, Myers EW, Saalfeld S, Korff W, Sternson SM, Tillberg PW. EASI-FISH for thick tissue defines lateral hypothalamus spatio-molecular organization. Cell. 2021 Dec 22;184(26):6361-6377.e24. doi: <a href="https://doi.org/10.1016/j.cell.2021.11.024">10.1016/j.cell.2021.11.024</a>
     </li>
     <li>Di Tommaso, P., Chatzou, M., Floden, E. W., Barja, P. P., Palumbo, E., & Notredame, C. (2017). Nextflow enables reproducible computational workflows. Nature Biotechnology, 35(4), 316-319. doi: <a href="https://doi.org/10.1038/nbt.3820">10.1038/nbt.3820</a></li>
     <li>Ewels, P. A., Peltzer, A., Fillinger, S., Patel, H., Alneberg, J., Wilm, A., Garcia, M. U., Di Tommaso, P., & Nahnsen, S. (2020). The nf-core framework for community-curated bioinformatics pipelines. Nature Biotechnology, 38(3), 276-278. doi: <a href="https://doi.org/10.1038/s41587-020-0439-x">10.1038/s41587-020-0439-x</a></li>
