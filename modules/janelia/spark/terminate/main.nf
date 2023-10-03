@@ -1,7 +1,3 @@
-include {
-    get_terminate_file_name;
-} from '../utils'
-
 process SPARK_TERMINATE {
     label 'process_single'
     container 'docker.io/multifish/biocontainers-spark:3.1.3'
@@ -14,7 +10,7 @@ process SPARK_TERMINATE {
 
     script:
     cluster_work_fullpath = cluster_work_dir.resolveSymLink().toString()
-    terminate_file_name = get_terminate_file_name(cluster_work_dir)
+    terminate_file_name = "${cluster_work_dir}/terminate-spark"
     """
     /opt/scripts/terminate.sh "$terminate_file_name"
     """

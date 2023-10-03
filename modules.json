@@ -2,6 +2,61 @@
     "name": "nf-core/lightsheetrecon",
     "homePage": "https://github.com/nf-core/lightsheetrecon",
     "repos": {
+        "git@github.com:JaneliaSciComp/nextflow-modules.git": {
+            "modules": {
+                "janelia": {
+                    "spark/prepare": {
+                        "branch": "main",
+                        "git_sha": "c1914886181c10bc32dd9ddb036b83bb24d9d290",
+                        "installed_by": ["spark_cluster"]
+                    },
+                    "spark/startmanager": {
+                        "branch": "main",
+                        "git_sha": "a16245c437975d8f7db2487f6128384c4834ff24",
+                        "installed_by": ["spark_cluster"]
+                    },
+                    "spark/startworker": {
+                        "branch": "main",
+                        "git_sha": "a16245c437975d8f7db2487f6128384c4834ff24",
+                        "installed_by": ["spark_cluster"]
+                    },
+                    "spark/terminate": {
+                        "branch": "main",
+                        "git_sha": "a16245c437975d8f7db2487f6128384c4834ff24",
+                        "installed_by": ["spark_stop"]
+                    },
+                    "spark/waitformanager": {
+                        "branch": "main",
+                        "git_sha": "a16245c437975d8f7db2487f6128384c4834ff24",
+                        "installed_by": ["spark_cluster"]
+                    },
+                    "spark/waitforworker": {
+                        "branch": "main",
+                        "git_sha": "a16245c437975d8f7db2487f6128384c4834ff24",
+                        "installed_by": ["spark_cluster"]
+                    }
+                }
+            },
+            "subworkflows": {
+                "janelia": {
+                    "spark_cluster": {
+                        "branch": "main",
+                        "git_sha": "06caac8571faa8bc5e682aa2e6c46b86e6509974",
+                        "installed_by": ["spark_start"]
+                    },
+                    "spark_start": {
+                        "branch": "main",
+                        "git_sha": "a15e17e912463b9fe4d8b3b2626582d534053067",
+                        "installed_by": ["subworkflows"]
+                    },
+                    "spark_stop": {
+                        "branch": "main",
+                        "git_sha": "2687e4b1497388f03952722e0c5ade6a217361b4",
+                        "installed_by": ["subworkflows"]
+                    }
+                }
+            }
+        },
         "https://github.com/nf-core/modules.git": {
             "modules": {
                 "nf-core": {

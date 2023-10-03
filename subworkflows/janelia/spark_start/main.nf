@@ -1,4 +1,4 @@
-include { SPARK_CLUSTER } from '../cluster/main'
+include { SPARK_CLUSTER } from '../spark_cluster/main'
 
 /**
  * Prepares Spark contexts, either a distributed cluster or local.
@@ -9,7 +9,7 @@ include { SPARK_CLUSTER } from '../cluster/main'
  */
 workflow SPARK_START {
     take:
-    meta_tuples           // channel: [ val(meta), [ files ] ]
+    ch_meta               // channel: [ val(meta), [ files ] ]
     data_dir              // path: [ /path/to/input mounted to the Spark workers ]
     spark_cluster         // boolean: start a distributed cluster?
     spark_workers         // int: number of workers in the cluster (ignored if spark_cluster is false)
@@ -20,7 +20,7 @@ workflow SPARK_START {
 
     main:
 
-    spark_work_dirs = meta_tuples.map { it[0].spark_work_dir }
+    spark_work_dirs = ch_meta.map { it[0].spark_work_dir }
 
     if (spark_cluster) {
         workers = spark_workers
@@ -48,7 +48,7 @@ workflow SPARK_START {
 
     // Rejoin Spark clusters to metas
     // channel: [ meta, spark_work_dir, spark_uri ]
-    spark_context = meta_tuples.map {
+    spark_context = ch_meta.map {
         def (meta, files) = it
         log.debug "Prepared $meta.id"
         [meta, meta.spark_work_dir, files]

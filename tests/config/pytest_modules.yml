@@ -1,3 +1,0 @@
-spark:
-  - subworkflows/local/spark/**
-  - tests/subworkflows/local/spark/**

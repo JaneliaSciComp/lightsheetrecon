@@ -73,8 +73,8 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 */
 
 include { INPUT_CHECK         } from '../subworkflows/local/input_check'
-include { SPARK_START         } from '../subworkflows/local/spark/start/main'
-include { SPARK_STOP          } from '../subworkflows/local/spark/stop/main'
+include { SPARK_START         } from '../subworkflows/janelia/spark_start/main'
+include { SPARK_STOP          } from '../subworkflows/janelia/spark_stop/main'
 include { STITCHING_PREPARE   } from '../modules/local/stitching/prepare/main'
 include { STITCHING_PARSECZI  } from '../modules/local/stitching/parseczi/main'
 include { STITCHING_CZI2N5    } from '../modules/local/stitching/czi2n5/main'
